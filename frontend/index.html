@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="description" content="Військова система адаптації для новоприбулихів" />
+    <title>Військова Система Адаптації</title>
+    <script>
+      // Завантажити тему при старті
+      const theme = localStorage.getItem('theme') || 'dark';
+      if (theme === 'red-light') {
+        document.documentElement.classList.add('red-light');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-tactical-black text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
