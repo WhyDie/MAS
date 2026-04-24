@@ -1,0 +1,145 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+
+# ========== BUILD STAGE ==========
+build_backend:
+  stage: build
+  image: node:18-alpine
+  script:
+    - cd backend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - backend/dist
+    expire_in: 1 day
+  cache:
+    paths:
+      - backend/node_modules
+
+build_frontend:
+  stage: build
+  image: node:18-alpine
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist
+    expire_in: 1 day
+  cache:
+    paths:
+      - frontend/node_modules
+
+build_docker:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_VERIFY: ""
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA -f backend/Dockerfile .
+    - docker build -t $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA -f frontend/Dockerfile .
+    - docker push $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA
+  only:
+    - main
+    - develop
+
+# ========== TEST STAGE ==========
+test_backend:
+  stage: test
+  image: node:18-alpine
+  dependencies:
+    - build_backend
+  script:
+    - cd backend
+    - npm ci
+    - npm run test
+  coverage: '/Coverage: \d+\.\d+%/'
+  cache:
+    paths:
+      - backend/node_modules
+
+test_frontend:
+  stage: test
+  image: node:18-alpine
+  dependencies:
+    - build_frontend
+  script:
+    - cd frontend
+    - npm ci
+    - npm run test
+  coverage: '/Coverage: \d+\.\d+%/'
+  cache:
+    paths:
+      - frontend/node_modules
+
+lint:
+  stage: test
+  image: node:18-alpine
+  script:
+    - npm ci
+    - npm run lint
+  cache:
+    paths:
+      - node_modules
+  allow_failure: true
+
+# ========== DEPLOY STAGE ==========
+deploy_review:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_VERIFY: ""
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - docker-compose -f docker-compose.yml up -d
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: http://$CI_ENVIRONMENT_SLUG.example.com
+  only:
+    - merge_requests
+  when: manual
+
+deploy_production:
+  stage: deploy
+  image: ubuntu:latest
+  before_script:
+    - apt-get update && apt-get install -y openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $PRODUCTION_SERVER >> ~/.ssh/known_hosts
+  script:
+    # Clone на production сервері
+    - ssh $SSH_USER@$PRODUCTION_SERVER "
+        cd /var/www/military-adaptation-system &&
+        git pull origin main &&
+        docker-compose -f docker-compose.prod.yml pull &&
+        docker-compose -f docker-compose.prod.yml up -d &&
+        docker-compose -f docker-compose.prod.yml exec -T backend npm run build &&
+        docker-compose -f docker-compose.prod.yml restart
+      "
+  environment:
+    name: production
+    url: https://your-domain.com
+  only:
+    - main
+  when: manual

@@ -364,7 +364,3 @@ npm run test --workspace=frontend -- --ui
 npm run lint
 npm run test
 ```
-
-## 📞 Контакт
-
-Внутрішньовідомчі питання: security@military-system.ua

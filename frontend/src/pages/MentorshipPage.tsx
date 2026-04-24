@@ -23,6 +23,53 @@ interface MentorshipRequest {
   createdAt: string;
 }
 
+const tryzubPoints = [
+  // Center (14 points)
+  {x:50,y:15}, {x:50,y:20}, {x:50,y:25}, {x:50,y:30}, {x:50,y:35}, {x:50,y:40}, {x:50,y:45},
+  {x:50,y:50}, {x:50,y:55}, {x:50,y:60}, {x:50,y:65}, {x:50,y:70}, {x:50,y:75}, {x:50,y:80},
+  // Left outer (9 points)
+  {x:34,y:30}, {x:33,y:40}, {x:33,y:50}, {x:33,y:60}, {x:35,y:68}, {x:38,y:75}, {x:42,y:79}, {x:46,y:81}, {x:49,y:81},
+  // Right outer (9 points)
+  {x:66,y:30}, {x:67,y:40}, {x:67,y:50}, {x:67,y:60}, {x:65,y:68}, {x:62,y:75}, {x:58,y:79}, {x:54,y:81}, {x:51,y:81},
+  // Left inner (4 points)
+  {x:43,y:45}, {x:44,y:52}, {x:46,y:59}, {x:48,y:65},
+  // Right inner (4 points)
+  {x:57,y:45}, {x:56,y:52}, {x:54,y:59}, {x:52,y:65}
+];
+
+const generateFireflyStyles = () => {
+  let styles = '';
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+
+  tryzubPoints.forEach((pt, i) => {
+    const rX1 = -20 + seededRandom(i * 1.1) * 140; const rY1 = -20 + seededRandom(i * 1.2) * 140;
+    const rX2 = -20 + seededRandom(i * 1.3) * 140; const rY2 = -20 + seededRandom(i * 1.4) * 140;
+    const rX3 = -20 + seededRandom(i * 1.5) * 140; const rY3 = -20 + seededRandom(i * 1.6) * 140;
+
+    const tX1 = rX1 - pt.x; const tY1 = rY1 - pt.y;
+    const tX2 = rX2 - pt.x; const tY2 = rY2 - pt.y;
+    const tX3 = rX3 - pt.x; const tY3 = rY3 - pt.y;
+
+    styles += `
+      @keyframes firefly-tryzub-${i} {
+        0%   { transform: translate(calc(-50% + ${tX1}vw), calc(-50% + ${tY1}vh)); background: #4ade80; box-shadow: 0 0 12px 2px rgba(74,222,128,0.6); opacity: 0; }
+        10%  { opacity: 1; }
+        25%  { transform: translate(calc(-50% + ${tX2}vw), calc(-50% + ${tY2}vh)); background: #4ade80; box-shadow: 0 0 12px 2px rgba(74,222,128,0.6); }
+        45%  { transform: translate(-50%, -50%); background: var(--ab3-gold); box-shadow: 0 0 20px 4px rgba(201,162,39,0.8); }
+        55%  { transform: translate(-50%, -50%); background: var(--ab3-gold); box-shadow: 0 0 25px 6px rgba(201,162,39,1); }
+        75%  { transform: translate(calc(-50% + ${tX3}vw), calc(-50% + ${tY3}vh)); background: #4ade80; box-shadow: 0 0 12px 2px rgba(74,222,128,0.6); }
+        90%  { opacity: 1; }
+        100% { transform: translate(calc(-50% + ${tX1}vw), calc(-50% + ${tY1}vh)); background: #4ade80; box-shadow: 0 0 12px 2px rgba(74,222,128,0.6); opacity: 0; }
+      }
+    `;
+  });
+  return styles;
+};
+const fireflyStyles = generateFireflyStyles();
+
 export const MentorshipPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'browse' | 'my-requests' | 'create'>('browse');
   const [loading, setLoading] = useState(false);
@@ -118,7 +165,26 @@ export const MentorshipPage: React.FC = () => {
   ];
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="relative min-h-[calc(100vh-6rem)] pb-12 animate-fade-in-up z-10">
+      {/* Військовий фон: Хаотичні світлячки, що об'єднуються у Тризуб */}
+      <div className="fixed inset-0 z-[-1] bg-[var(--bg-primary)] overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f0a] via-[var(--bg-primary)] to-[#0a0f0a]" />
+        <style>{fireflyStyles}</style>
+        {tryzubPoints.map((pt, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full mix-blend-screen pointer-events-none"
+            style={{
+              left: `${pt.x}%`,
+              top: `${pt.y}%`,
+              width: '4px',
+              height: '4px',
+              animation: `firefly-tryzub-${i} 20s ease-in-out infinite`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
@@ -208,9 +274,10 @@ export const MentorshipPage: React.FC = () => {
               {mentors.map((mentor, index) => (
                 <div
                   key={mentor.id}
-                  className="military-card p-6 animate-fade-in-up"
-                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+              className="military-card p-6 animate-fade-in-up hover:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.5)] hover:-translate-y-2 transition-all duration-500 border border-transparent hover:border-[var(--border-subtle)] relative overflow-hidden group"
+              style={{ background: 'rgba(20, 24, 20, 0.5)', backdropFilter: 'blur(16px)', animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                 >
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" style={{ background: `radial-gradient(circle at top right, rgba(201,162,39,0.05), transparent 60%)` }} />
                   <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
                   <div className="flex items-start justify-between mb-4">
                     <div>
