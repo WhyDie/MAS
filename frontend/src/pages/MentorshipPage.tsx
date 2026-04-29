@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
+import { useAuthStore } from '@stores/index';
 
 interface MentorProfile {
   id: string;
@@ -24,6 +25,7 @@ interface MentorshipRequest {
 }
 
 export const MentorshipPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'browse' | 'my-requests' | 'create'>('browse');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -88,10 +90,12 @@ export const MentorshipPage: React.FC = () => {
       await api.post('/mentorship/requests', {
         topic: newRequest.topic,
         description: newRequest.description,
+        mentorId: newRequest.mentorId || undefined,
         requestedMentorId: newRequest.mentorId || undefined,
+        mentor: newRequest.mentorId || undefined,
       });
       setNewRequest({ topic: '', description: '', mentorId: '' });
-      setSuccess('Запит створено! Ментора буде призначено найближчим часом.');
+      setSuccess('Запит створено! Ментора буде повідомлено.');
       setError('');
       setActiveTab('my-requests');
       fetchMyRequests();
@@ -131,7 +135,7 @@ export const MentorshipPage: React.FC = () => {
 
       {/* Tab Navigation */}
       <div
-        className="p-3 rounded-2xl mb-8 animate-fade-in-up"
+        className="p-3 rounded-none mb-8 animate-fade-in-up"
         style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
       >
         <div className="flex gap-2 flex-wrap">
@@ -157,7 +161,7 @@ export const MentorshipPage: React.FC = () => {
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3">
             <span className="text-xl">⚠️</span>
             <span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span>
@@ -166,7 +170,7 @@ export const MentorshipPage: React.FC = () => {
       )}
 
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <div className="flex items-center gap-3">
             <span className="text-xl">✅</span>
             <span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span>
@@ -190,7 +194,7 @@ export const MentorshipPage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="p-16 rounded-2xl text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
               <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
                 <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/>
@@ -198,7 +202,7 @@ export const MentorshipPage: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Завантаження...</p>
             </div>
           ) : mentors.length === 0 ? (
-            <div className="p-16 rounded-2xl text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
               <div className="text-6xl mb-4">🤝</div>
               <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>Менторів не знайдено</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Створіть запит і ментор буде призначений</p>
@@ -208,7 +212,7 @@ export const MentorshipPage: React.FC = () => {
               {mentors.map((mentor, index) => (
                 <div
                   key={mentor.id}
-                  className="military-card p-6 animate-fade-in-up"
+                  className="military-card p-6 animate-fade-in-up transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.6)] relative overflow-hidden group"
                   style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                 >
                   <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
@@ -256,7 +260,7 @@ export const MentorshipPage: React.FC = () => {
                       setNewRequest({ ...newRequest, mentorId: mentor.id });
                       setActiveTab('create');
                     }}
-                    className="btn btn-primary w-full"
+                    className="btn btn-primary w-full transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg"
                     style={{ padding: '12px 18px', fontSize: '13px' }}
                   >
                     Запросити менторство
@@ -272,7 +276,7 @@ export const MentorshipPage: React.FC = () => {
       {activeTab === 'my-requests' && (
         <div className="animate-fade-in-up">
           {loading ? (
-            <div className="p-16 rounded-2xl text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
               <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
                 <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/>
@@ -280,7 +284,7 @@ export const MentorshipPage: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Завантаження...</p>
             </div>
           ) : myRequests.length === 0 ? (
-            <div className="p-16 rounded-2xl text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>Запитів ще немає</h3>
               <p className="mb-6" style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Створіть перший запит на менторство</p>
@@ -310,6 +314,13 @@ export const MentorshipPage: React.FC = () => {
                       Ментор: <strong style={{ color: '#60a5fa' }}>Призначений</strong>
                     </p>
                   )}
+                  
+                  {req.response && (
+                    <div className="mt-4 p-4 bg-[#111] border border-[#333]">
+                      <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--ab3-gold)' }}>Відповідь ментора:</p>
+                      <p className="text-sm text-gray-300 leading-relaxed">{req.response}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -320,7 +331,7 @@ export const MentorshipPage: React.FC = () => {
       {/* Create Request */}
       {activeTab === 'create' && (
         <div
-          className="p-6 rounded-2xl animate-fade-in-up"
+          className="p-6 rounded-none animate-fade-in-up"
           style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
         >
           <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>

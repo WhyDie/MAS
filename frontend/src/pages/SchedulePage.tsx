@@ -81,7 +81,7 @@ export const SchedulePage: React.FC = () => {
   const getStatusBadge = (status: string) => {
     const cfg = statusConfig[status] || statusConfig.scheduled;
     return (
-      <span className="badge" style={{ background: `${cfg.color}20`, color: cfg.color, border: `1px solid ${cfg.color}40`, fontSize: '10px' }}>
+      <span className="badge rounded-none font-mono uppercase tracking-widest" style={{ background: `${cfg.color}15`, color: cfg.color, border: `1px solid ${cfg.color}`, fontSize: '9px' }}>
         {cfg.label}
       </span>
     );
@@ -91,31 +91,34 @@ export const SchedulePage: React.FC = () => {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex justify-between items-start flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-              📅 Розпорядок Дня
-            </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-              Графік занять, нарядів, подій та зустрічей підрозділу
-            </p>
+        <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[#333] pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-2 h-10 bg-[var(--ab3-gold)]" />
+            <div>
+              <h1 className="text-3xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>
+                РОЗПОРЯДОК <span className="text-white/30 font-light">/ ДНЯ</span>
+              </h1>
+              <p className="font-mono text-xs uppercase tracking-widest mt-1" style={{ color: 'var(--text-muted)' }}>
+                // ПЛАН ЗАХОДІВ ПІДРОЗДІЛУ //
+              </p>
+            </div>
           </div>
           {(user?.role === 'commander' || user?.role === 'admin' || user?.role === 'superadmin') && (
-            <button onClick={() => navigate('/schedule-admin')} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління розпорядком</button>
+            <button onClick={() => navigate('/schedule-admin')} className="btn btn-primary rounded-none uppercase tracking-widest font-bold" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління розпорядком</button>
           )}
         </div>
       </div>
 
       {/* Date Navigation */}
       <div
-        className="p-4 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
+        className="p-4 mb-6 animate-fade-in-up bg-[#0a0a0a] border border-[#222]"
+        style={{ animationDelay: '0.1s', animationFillMode: 'both', borderRadius: '2px' }}
       >
         <div className="flex gap-2 items-center flex-wrap">
           <button
             onClick={() => setSelectedDate(new Date(selectedDate.getTime() - 86400000))}
-            className="btn"
-            style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '10px 18px', fontSize: '13px' }}
+            className="btn font-mono uppercase text-xs tracking-wider hover:text-white"
+            style={{ background: '#111', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 18px' }}
           >
             ← Назад
           </button>
@@ -125,33 +128,33 @@ export const SchedulePage: React.FC = () => {
             value={selectedDate.toISOString().split('T')[0]}
             onChange={(e) => setSelectedDate(new Date(e.target.value))}
             className="input"
-            style={{ maxWidth: '200px', padding: '8px 14px' }}
+            style={{ maxWidth: '200px', padding: '8px 14px', borderRadius: '2px', border: '1px solid #333', background: '#111', color: 'white', fontFamily: 'monospace' }}
           />
 
           <button
             onClick={() => setSelectedDate(new Date(selectedDate.getTime() + 86400000))}
-            className="btn"
-            style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '10px 18px', fontSize: '13px' }}
+            className="btn font-mono uppercase text-xs tracking-wider hover:text-white"
+            style={{ background: '#111', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 18px' }}
           >
             Вперед →
           </button>
 
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="btn btn-primary ml-auto"
+            className="btn btn-primary ml-auto uppercase font-bold tracking-widest text-xs"
             style={{ padding: '10px 18px', fontSize: '13px' }}
           >
-            📅 Сьогодні
+            Сьогодні
           </button>
         </div>
       </div>
 
       {/* Week View */}
       <div
-        className="p-4 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.15s', animationFillMode: 'both' }}
+        className="p-4 mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#222]"
+        style={{ animationDelay: '0.15s', animationFillMode: 'both', borderRadius: '2px' }}
       >
-        <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ab3-gold)', fontSize: '13px', letterSpacing: '0.5px' }}>Тижневий огляд</h3>
+        <h3 className="font-mono text-xs font-bold mb-4 uppercase tracking-widest" style={{ color: 'var(--ab3-gold)' }}>[ ТИЖНЕВИЙ ОГЛЯД ]</h3>
         <div className="grid grid-cols-7 gap-2 text-center text-sm">
           {Array.from({ length: 7 }).map((_, i) => {
             const date = new Date(selectedDate.getTime() + (i - 3) * 86400000);
@@ -163,7 +166,7 @@ export const SchedulePage: React.FC = () => {
               <button
                 key={i}
                 onClick={() => setSelectedDate(date)}
-                className="p-3 rounded-xl border transition-all duration-300 hover:scale-105"
+                className="p-3 rounded-none border transition-all duration-300 hover:scale-105"
                 style={{
                   background: isSelected ? 'var(--gradient-gold)' : isToday ? 'var(--bg-glass-hover)' : 'transparent',
                   borderColor: isToday ? 'var(--ab3-gold)' : 'var(--border-subtle)',
@@ -187,7 +190,7 @@ export const SchedulePage: React.FC = () => {
 
       {/* Events List */}
       <div
-        className="rounded-2xl overflow-hidden animate-fade-in-up"
+        className="rounded-none overflow-hidden animate-fade-in-up"
         style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.2s', animationFillMode: 'both' }}
       >
         <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>

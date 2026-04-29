@@ -287,7 +287,7 @@ export const SimulatorAdminPage: React.FC = () => {
       <div className="animate-fade-in-up">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-heading font-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>{editorTitle}</h1>
+            <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>{editorTitle}</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>
               {editingSim.title} — {editorType === 'scenario' ? `${scenarioNodes.length} вузлів` : `${quizQuestions.length} питань`}
             </p>
@@ -299,12 +299,12 @@ export const SimulatorAdminPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+          <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
             <span>⚠️ {error}</span>
           </div>
         )}
         {success && (
-          <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+          <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
             <span>✅ {success}</span>
           </div>
         )}
@@ -312,7 +312,7 @@ export const SimulatorAdminPage: React.FC = () => {
         {/* QUIZ / QUESTIONS EDITOR */}
         {editorType === 'questions' && (
           <>
-            <div className="p-6 rounded-2xl mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none mb-6 bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>⚙️ Налаштування тесту</h3>
               <div className="flex items-center gap-4">
                 <label className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Прохідний бал:</label>
@@ -323,7 +323,7 @@ export const SimulatorAdminPage: React.FC = () => {
 
             <div className="space-y-6">
               {quizQuestions.map((q, qi) => (
-                <div key={qi} className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                <div key={qi} className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold" style={{ color: 'var(--ab3-gold)' }}>📝 Питання {qi + 1}</h3>
                     <button onClick={() => deleteQuestion(qi)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 14px', fontSize: '12px' }}>🗑</button>
@@ -357,7 +357,7 @@ export const SimulatorAdminPage: React.FC = () => {
           <>
             <div className="space-y-6">
               {scenarioNodes.map((node, ni) => (
-                <div key={node.id} className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                <div key={node.id} className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold" style={{ color: 'var(--ab3-gold)' }}>🎭 Вузол {ni + 1}</h3>
                     <button onClick={() => deleteNode(ni)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 14px', fontSize: '12px' }}>🗑</button>
@@ -369,7 +369,7 @@ export const SimulatorAdminPage: React.FC = () => {
                   <div className="mb-4">
                     <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Варіанти вибору</label>
                     {node.choices.map((choice, ci) => (
-                      <div key={ci} className="mb-3 p-4 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                      <div key={ci} className="mb-3 p-4 rounded-none bg-[#111] border border-[#333]">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>Вибір {ci + 1}</span>
                           {node.choices.length > 1 && (
@@ -413,28 +413,28 @@ export const SimulatorAdminPage: React.FC = () => {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>🎮 Управління симуляторами</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Додавання, редагування, видалення, сортування та редактор контенту</p>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>УПРАВЛІННЯ СИМУЛЯТОРАМИ</h1>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// РЕДАКТОР СИМУЛЯТОРІВ //</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <span>⚠️ {error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <span>✅ {success}</span>
         </div>
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>🎮 Симулятори</h2>
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>СИМУЛЯТОРИ</h2>
         <button onClick={() => openForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати симулятор</button>
       </div>
 
       {showForm && (
-        <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingSim ? '✏️ Редагування' : '➕ Новий симулятор'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Назва симулятора" /></div>
@@ -455,7 +455,7 @@ export const SimulatorAdminPage: React.FC = () => {
       )}
 
       {loading && !showForm ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
           <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
           <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
         </div>
@@ -471,7 +471,7 @@ export const SimulatorAdminPage: React.FC = () => {
 
               return (
                 <div key={s.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop}
-                  className="military-card p-5 flex items-center gap-4 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-4 transition-all duration-300"
                   style={{ cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: isOver ? 'translateY(8px)' : 'none', boxShadow: isOver ? '0 -4px 0 0 var(--ab3-gold)' : 'none', borderLeft: `4px solid ${diff.color}` }}>
                   <div className="flex-shrink-0">{dragIcon}</div>
                   <span className="text-2xl flex-shrink-0">{s.type === 'scenario' ? '🎯' : s.type === 'quiz' ? '❓' : s.type === 'combat_drill' ? '⚔️' : s.type === 'survival' ? '🏕️' : '📡'}</span>

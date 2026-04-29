@@ -68,28 +68,26 @@ export const RegisterPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 animate-float"
-            style={{ background: 'var(--gradient-olive)' }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-none mb-6 border-2 border-[var(--ab3-gold)] bg-black"
           >
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#c9a227"/>
+              <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="var(--ab3-gold)"/>
             </svg>
           </div>
-          <h1 className="text-3xl font-heading font-black text-gradient-gold mb-3">
+          <h1 className="text-3xl font-heading font-black uppercase tracking-widest text-white mb-3">
             РЕЄСТРАЦІЯ
           </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            Створення облікового запису за кодом запрошення
+          <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--ab3-gold)' }}>
+            // ДОСТУП ДО СИСТЕМИ //
           </p>
         </div>
 
         {/* Register Card */}
         <div
-          className="p-8 rounded-2xl animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(20px)', border: '1px solid var(--border-subtle)' }}
+          className="p-8 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
         >
           {error && (
-            <div className="mb-6 p-4 rounded-xl border" style={{ background: 'rgba(220, 38, 38, 0.1)', borderColor: 'rgba(220, 38, 38, 0.3)', color: '#f87171' }}>
+            <div className="mb-6 p-4 rounded-none border" style={{ background: 'rgba(220, 38, 38, 0.1)', borderColor: 'rgba(220, 38, 38, 0.3)', color: '#f87171' }}>
               <div className="flex items-center gap-3">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
                 <span>{error}</span>

@@ -135,17 +135,17 @@ export const ScheduleAdminPage: React.FC = () => {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>📅 Управління розпорядком</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Додавання, редагування та видалення подій розпорядку дня</p>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>УПРАВЛІННЯ РОЗПОРЯДКОМ</h1>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// РЕДАГУВАННЯ ГРАФІКА //</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <span>⚠️ {error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <span>✅ {success}</span>
         </div>
       )}
@@ -161,7 +161,7 @@ export const ScheduleAdminPage: React.FC = () => {
 
       {/* Form */}
       {showForm && (
-        <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingEvent ? '✏️ Редагування події' : '➕ Нова подія'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Побудова" /></div>
@@ -185,14 +185,14 @@ export const ScheduleAdminPage: React.FC = () => {
 
       {/* Events List */}
       {loading && !showForm ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
           <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
           <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filterByDate(events).length === 0 ? (
-            <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
               <div className="text-6xl mb-4">📅</div>
               <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Немає подій на цю дату</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Натисніть "➕ Додати подію" щоб створити розпорядок</p>
@@ -202,7 +202,7 @@ export const ScheduleAdminPage: React.FC = () => {
               const typeCfg = eventTypeConfig[ev.eventType] || eventTypeConfig.other;
               const statusCfg = statusConfig[ev.status] || statusConfig.scheduled;
               return (
-                <div key={ev.id} className="military-card p-5 flex items-center gap-4" style={{ borderLeft: `4px solid ${typeCfg.color}` }}>
+                <div key={ev.id} className="military-card rounded-none p-5 flex items-center gap-4 bg-[#0a0a0a] border border-[#333]" style={{ borderLeft: `4px solid ${typeCfg.color}` }}>
                   <div className="text-3xl flex-shrink-0">{typeCfg.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">

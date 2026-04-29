@@ -32,7 +32,7 @@ export const TrainingModuleDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+      <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
         <svg className="animate-spin w-12 h-12 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
         <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>Завантаження модуля...</p>
       </div>
@@ -41,7 +41,7 @@ export const TrainingModuleDetailPage: React.FC = () => {
 
   if (error || !module) {
     return (
-      <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+      <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
         <div className="text-6xl mb-4">❌</div>
         <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Помилка завантаження</h3>
         <p style={{ color: 'var(--text-muted)' }}>{error || 'Модуль не знайдено'}</p>
@@ -67,14 +67,14 @@ export const TrainingModuleDetailPage: React.FC = () => {
       </button>
 
       {/* Header */}
-      <div className="p-8 rounded-2xl mb-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+      <div className="p-8 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
         <div className="flex flex-wrap gap-3 mb-4">
           <span className="badge badge-gold">{module.category}</span>
           <span className="badge" style={{ background: `${diff.color}20`, color: diff.color, border: `1px solid ${diff.color}40`, fontSize: '11px' }}>{diff.label}</span>
           <span className="badge badge-info">⏱ {module.durationMinutes} хв</span>
         </div>
 
-        <h1 className="text-3xl font-heading font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '30px', lineHeight: '1.2' }}>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-4" style={{ color: 'var(--text-primary)', fontSize: '30px', lineHeight: '1.2' }}>
           {module.title}
         </h1>
 
@@ -96,7 +96,7 @@ export const TrainingModuleDetailPage: React.FC = () => {
 
       {/* Content */}
       {contentText && (
-        <div className="p-8 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-8 rounded-none bg-[#0a0a0a] border border-[#333]">
           <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--ab3-gold)', fontSize: '22px' }}>📖 Зміст модуля</h2>
           <div className="prose" style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7' }}>
             {contentText.split('\n').map((line: string, i: number) => {
@@ -117,7 +117,7 @@ export const TrainingModuleDetailPage: React.FC = () => {
 
       {/* Tags */}
       {module.tags && module.tags.length > 0 && (
-        <div className="mt-6 p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="mt-6 p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
           <p className="text-sm font-bold mb-3" style={{ color: 'var(--text-muted)' }}>🏷️ Теги</p>
           <div className="flex flex-wrap gap-2">
             {(typeof module.tags === 'string' ? JSON.parse(module.tags) : module.tags).map((tag: string) => (

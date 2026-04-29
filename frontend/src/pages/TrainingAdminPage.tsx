@@ -180,28 +180,28 @@ export const TrainingAdminPage: React.FC = () => {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>⚙️ Управління модулями</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Додавання, редагування, видалення та сортування навчальних модулів</p>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>УПРАВЛІННЯ МОДУЛЯМИ</h1>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// БАЗА НАВЧАЛЬНИХ ПРОГРАМ //</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <div className="flex items-center gap-3"><span className="text-xl">✅</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span></div>
         </div>
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📚 Навчальні модулі</h2>
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>НАВЧАЛЬНІ МОДУЛІ</h2>
         <button onClick={() => openForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати модуль</button>
       </div>
 
       {showForm && (
-        <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingModule ? '✏️ Редагування' : '➕ Новий модуль'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Назва модуля" /></div>
@@ -224,7 +224,7 @@ export const TrainingAdminPage: React.FC = () => {
       )}
 
       {loading && !showForm ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
           <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
           <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
         </div>
@@ -237,7 +237,7 @@ export const TrainingAdminPage: React.FC = () => {
               const diff = difficulties.find(d => d.value === m.difficulty);
               return (
                 <div key={m.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop}
-                  className="military-card p-5 flex items-center gap-4 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-4 transition-all duration-300"
                   style={{ cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: isOver ? 'translateY(8px)' : 'none', boxShadow: isOver ? '0 -4px 0 0 var(--ab3-gold)' : 'none', borderLeft: `4px solid ${diff?.color || '#6b7280'}` }}>
                   <div className="flex-shrink-0">{dragIcon}</div>
                   <span className="text-2xl flex-shrink-0">{cat?.icon || '📚'}</span>
@@ -263,7 +263,7 @@ export const TrainingAdminPage: React.FC = () => {
       {/* Content Viewer Modal */}
       {showContentViewer && viewingModule && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }} onClick={() => setShowContentViewer(false)}>
-          <div className="rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-none max-w-3xl w-full max-h-[85vh] overflow-y-auto animate-fade-in-up bg-[#0a0a0a] border border-[#333]" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="flex justify-between items-start">
                 <div>
@@ -282,7 +282,7 @@ export const TrainingAdminPage: React.FC = () => {
                 <span className="badge badge-info">⏱ {viewingModule.durationMinutes} хв</span>
               </div>
               {viewingModule.content ? (
-                <div className="p-5 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                <div className="p-5 rounded-none bg-[#111] border border-[#333]">
                   <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ab3-gold)', fontSize: '13px', letterSpacing: '0.5px' }}>📝 ЗМІСТ МОДУЛЯ</h3>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
                     {viewingModule.content.split('\n').map((line: string, i: number) => {
@@ -300,7 +300,7 @@ export const TrainingAdminPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="p-8 text-center rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                <div className="p-8 text-center rounded-none" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
                   <div className="text-6xl mb-4">📝</div>
                   <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Зміст порожній</h3>
                   <p style={{ color: 'var(--text-muted)' }}>Натисніть ✏️ щоб додати зміст модуля</p>

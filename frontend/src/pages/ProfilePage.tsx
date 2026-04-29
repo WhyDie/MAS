@@ -28,6 +28,8 @@ const roleColors: Record<string, string> = {
   superadmin: '#ef4444',
 };
 
+const PREDEFINED_ICONS = ['👤', '🪖', '🦅', '🐺', '🦉', '🐻', '🐍', '⚡️', '⚔️', '🛡️'];
+
 export const ProfilePage: React.FC = () => {
   const { user, setUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'info' | 'progress' | 'settings'>('info');
@@ -37,7 +39,7 @@ export const ProfilePage: React.FC = () => {
 
   // Edit profile
   const [editMode, setEditMode] = useState(false);
-  const [profileForm, setProfileForm] = useState({ rank: '', position: '', civilProfession: '' });
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', callsign: '', rank: '', position: '', civilProfession: '', icon: '' });
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Change password
@@ -47,9 +49,13 @@ export const ProfilePage: React.FC = () => {
   useEffect(() => {
     if (user) {
       setProfileForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        callsign: (user as any).callsign || '',
         rank: user.rank || '',
         position: user.position || '',
         civilProfession: user.civilProfession || '',
+        icon: (user as any).profilePictureUrl || (user as any).icon || '',
       });
     }
     loadStats();
@@ -67,7 +73,9 @@ export const ProfilePage: React.FC = () => {
   const saveProfile = async () => {
     try {
       setSavingProfile(true);
-      setUser({ ...user, ...profileForm } as any);
+      // Надійно зберігаємо всі поля єдиним запитом
+      await api.put('/users/profile-extended', profileForm);
+      setUser({ ...user, ...profileForm, profilePictureUrl: profileForm.icon } as any);
       setSuccess('Профіль оновлено');
       setEditMode(false);
     } catch (err: any) {
@@ -88,12 +96,28 @@ export const ProfilePage: React.FC = () => {
     }
     try {
       setChangingPassword(true);
+      // Відправляємо запит на зміну пароля
+      await api.put('/users/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      });
       setSuccess('Пароль змінено');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Помилка');
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileForm({ ...profileForm, icon: reader.result as string });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -111,28 +135,28 @@ export const ProfilePage: React.FC = () => {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>
-          👤 Особистий кабінет
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>
+          ОСОБИСТИЙ КАБІНЕТ
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-          Перегляд та редагування особистої інформації, прогресу навчання та налаштувань
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
+          // ІДЕНТИФІКАЦІЯ, ПРОГРЕС, НАЛАШТУВАННЯ //
         </p>
       </div>
 
       {/* Messages */}
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-4 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <span>⚠️ {error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-4 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <span>✅ {success}</span>
         </div>
       )}
 
       {/* Tab Navigation */}
-      <div className="p-3 rounded-2xl mb-8" style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)' }}>
+      <div className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
             <button
@@ -142,7 +166,7 @@ export const ProfilePage: React.FC = () => {
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
-                border: `1px solid ${activeTab === tab.id ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
+                border: `1px solid ${activeTab === tab.id ? 'var(--ab3-gold)' : '#333'}`,
                 padding: '10px 18px',
                 fontSize: '13px',
               }}
@@ -158,18 +182,25 @@ export const ProfilePage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
           <div className="lg:col-span-1">
-            <div className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
               <div className="text-center mb-6">
                 <div
-                  className="w-24 h-24 rounded-2xl mx-auto flex items-center justify-center text-3xl font-bold mb-4"
-                  style={{ background: `${roleColor}20`, color: roleColor, border: `2px solid ${roleColor}40` }}
+                  className="w-24 h-24 rounded-none mx-auto flex items-center justify-center text-3xl font-black mb-4 border border-[#333]"
+                  style={{ background: `${roleColor}20`, color: roleColor, border: `2px solid ${roleColor}40`, overflow: 'hidden' }}
                 >
-                  {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                  {(() => {
+                    const currentIcon = editMode ? profileForm.icon : ((user as any).profilePictureUrl || (user as any).icon || '');
+                    if (currentIcon && (currentIcon.startsWith('data:') || currentIcon.startsWith('http'))) {
+                      return <img src={currentIcon} alt="Avatar" className="w-full h-full object-cover" />;
+                    }
+                    return currentIcon || (user.firstName ? `${user.firstName.charAt(0)}${user.lastName?.charAt(0) || ''}` : '👤');
+                  })()}
                 </div>
-                <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
                   {user.firstName} {user.lastName}
                 </h2>
-                <span className="badge mt-2" style={{ background: `${roleColor}20`, color: roleColor, border: `1px solid ${roleColor}40` }}>
+                {(user as any).callsign && <p className="text-sm font-bold text-[var(--ab3-gold)] mt-1">"{ (user as any).callsign }"</p>}
+                <span className="badge rounded-none font-mono uppercase tracking-widest mt-2" style={{ background: `${roleColor}15`, color: roleColor, border: `1px solid ${roleColor}`, fontSize: '10px' }}>
                   {roleLabels[user.role] || user.role}
                 </span>
               </div>
@@ -178,6 +209,18 @@ export const ProfilePage: React.FC = () => {
                 <button onClick={() => setEditMode(true)} className="btn btn-primary w-full" style={{ padding: '12px 20px', fontSize: '14px' }}>✏️ Редагувати профіль</button>
               ) : (
                 <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Ім'я</label>
+                    <input className="input" value={profileForm.firstName} onChange={e => setProfileForm({ ...profileForm, firstName: e.target.value })} placeholder="Іван" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Прізвище</label>
+                    <input className="input" value={profileForm.lastName} onChange={e => setProfileForm({ ...profileForm, lastName: e.target.value })} placeholder="Коваленко" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Позивний</label>
+                    <input className="input" value={profileForm.callsign} onChange={e => setProfileForm({ ...profileForm, callsign: e.target.value })} placeholder="Сокіл" />
+                  </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Звання</label>
                     <input className="input" value={profileForm.rank} onChange={e => setProfileForm({ ...profileForm, rank: e.target.value })} placeholder="Рядовий" />
@@ -190,9 +233,35 @@ export const ProfilePage: React.FC = () => {
                     <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Цивільна професія</label>
                     <input className="input" value={profileForm.civilProfession} onChange={e => setProfileForm({ ...profileForm, civilProfession: e.target.value })} placeholder="Інженер" />
                   </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Іконка профілю</label>
+                    <div className="flex flex-wrap gap-2">
+                      {PREDEFINED_ICONS.map(icon => (
+                        <button
+                          key={icon}
+                          type="button"
+                          onClick={() => setProfileForm({ ...profileForm, icon })}
+                          className={`w-10 h-10 flex items-center justify-center text-xl rounded-none border transition-all ${profileForm.icon === icon ? 'border-[var(--ab3-gold)] bg-[rgba(201,162,39,0.15)]' : 'border-[#333] bg-[#111] hover:border-[#555]'}`}
+                        >
+                          {icon}
+                        </button>
+                      ))}
+                      <input type="file" accept="image/*" id="avatar-upload" className="hidden" onChange={handleFileUpload} />
+                      <label htmlFor="avatar-upload" className="px-3 h-10 flex items-center justify-center text-xs font-mono uppercase tracking-widest rounded-none border border-[#333] bg-[#111] hover:border-[#555] text-white cursor-pointer transition-all">
+                        📷 ФОТО
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setProfileForm({ ...profileForm, icon: '' })}
+                        className={`px-3 h-10 flex items-center justify-center text-xs font-mono uppercase tracking-widest rounded-none border transition-all ${!profileForm.icon ? 'border-[var(--ab3-gold)] bg-[rgba(201,162,39,0.15)] text-[var(--ab3-gold)]' : 'border-[#333] bg-[#111] hover:border-[#555] text-white'}`}
+                      >
+                        бейзік
+                      </button>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={saveProfile} disabled={savingProfile} className="btn btn-primary flex-1 disabled:opacity-50" style={{ padding: '10px 16px', fontSize: '13px' }}>{savingProfile ? '⏳...' : '💾 Зберегти'}</button>
-                    <button onClick={() => { setEditMode(false); setProfileForm({ rank: user.rank || '', position: user.position || '', civilProfession: user.civilProfession || '' }); }} className="btn flex-1" style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '10px 16px', fontSize: '13px' }}>Скасувати</button>
+                    <button onClick={() => { setEditMode(false); setProfileForm({ firstName: user.firstName || '', lastName: user.lastName || '', callsign: (user as any).callsign || '', rank: user.rank || '', position: user.position || '', civilProfession: user.civilProfession || '', icon: (user as any).profilePictureUrl || (user as any).icon || '' }); }} className="btn flex-1" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 16px', fontSize: '13px' }}>Скасувати</button>
                   </div>
                 </div>
               )}
@@ -201,30 +270,30 @@ export const ProfilePage: React.FC = () => {
 
           {/* Info Cards */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>📋 Основна інформація</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>📧 Email</p>
                   <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.email}</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🎖️ Звання</p>
                   <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.rank || 'Не вказано'}</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>💼 Посада</p>
                   <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.position || 'Не вказано'}</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🏢 Цивільна професія</p>
                   <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.civilProfession || 'Не вказано'}</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🏷️ Роль</p>
                   <p className="font-semibold" style={{ color: roleColor }}>{roleLabels[user.role] || user.role}</p>
                 </div>
-                <div className="p-4 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🆔 ID</p>
                   <p className="font-semibold font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{user.id}</p>
                 </div>
@@ -237,7 +306,7 @@ export const ProfilePage: React.FC = () => {
       {/* ===== PROGRESS TAB ===== */}
       {activeTab === 'progress' && (
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+          <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
             <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>📊 Прогрес навчання</h3>
             {trainingStats ? (
               <div>
@@ -247,25 +316,25 @@ export const ProfilePage: React.FC = () => {
                     <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Загальний прогрес</span>
                     <span className="text-sm font-bold" style={{ color: 'var(--ab3-gold)' }}>{trainingStats.completionRate}%</span>
                   </div>
-                  <div className="w-full rounded-full h-4 overflow-hidden" style={{ background: 'var(--ab3-gray-800)' }}>
+                  <div className="w-full rounded-none h-4 overflow-hidden" style={{ background: 'var(--ab3-gray-800)' }}>
                     <div
-                      className="h-full rounded-full transition-all duration-1000"
+                      className="h-full rounded-none transition-all duration-1000"
                       style={{ width: `${trainingStats.completionRate}%`, background: 'var(--gradient-gold)' }}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-5 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                  <div className="text-center p-5 rounded-none bg-[#111]">
                     <p className="text-4xl font-bold" style={{ color: '#22c55e' }}>{trainingStats.completedModules}</p>
                     <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Модулів завершено</p>
                     <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>з {trainingStats.totalModules}</p>
                   </div>
-                  <div className="text-center p-5 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                  <div className="text-center p-5 rounded-none bg-[#111]">
                     <p className="text-4xl font-bold" style={{ color: '#3b82f6' }}>{trainingStats.inProgressModules}</p>
                     <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>В процесі</p>
                   </div>
-                  <div className="text-center p-5 rounded-xl" style={{ background: 'var(--bg-glass)' }}>
+                  <div className="text-center p-5 rounded-none bg-[#111]">
                     <p className="text-4xl font-bold" style={{ color: '#f59e0b' }}>{trainingStats.averageScore}%</p>
                     <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Середній бал</p>
                   </div>
@@ -285,7 +354,7 @@ export const ProfilePage: React.FC = () => {
       {/* ===== SETTINGS TAB ===== */}
       {activeTab === 'settings' && (
         <div className="space-y-6">
-          <div className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+          <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
             <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>🔒 Зміна паролю</h3>
             <div className="space-y-4 max-w-md">
               <div>

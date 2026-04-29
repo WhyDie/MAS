@@ -340,18 +340,18 @@ export const UnitGuideAdminPage: React.FC = () => {
 
       {/* Messages */}
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <div className="flex items-center gap-3"><span className="text-xl">✅</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span></div>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="p-3 rounded-2xl mb-8" style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)' }}>
+      <div className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setShowRoomForm(false); setShowStaffForm(false); setShowStepForm(false); }}
@@ -371,13 +371,13 @@ export const UnitGuideAdminPage: React.FC = () => {
       {activeTab === 'rooms' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>🏢 Приміщення</h2>
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>🏢 ПРИМІЩЕННЯ</h2>
             <button onClick={() => openRoomForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати</button>
           </div>
 
           {/* Room Form */}
           {showRoomForm && (
-            <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingRoom ? '✏️ Редагування' : '➕ Нове приміщення'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -420,7 +420,7 @@ export const UnitGuideAdminPage: React.FC = () => {
 
           {/* Rooms List with Drag & Drop */}
           {loading && !showRoomForm ? (
-            <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
               <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
               <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
             </div>
@@ -436,7 +436,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                       onDragStart={h.onDragStart}
                       onDragOver={h.onDragOver}
                       onDrop={h.onDrop}
-                      className="military-card p-4 flex items-center gap-4 group transition-all duration-300"
+                      className="military-card rounded-none p-4 flex items-center gap-4 group transition-all duration-300 bg-[#0a0a0a] border border-[#333]"
                       style={{
                         borderLeft: `4px solid ${cat?.color || '#6b7280'}`,
                         cursor: 'grab',
@@ -468,12 +468,12 @@ export const UnitGuideAdminPage: React.FC = () => {
       {activeTab === 'staff' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>👥 Персонал</h2>
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>👥 ПЕРСОНАЛ</h2>
             <button onClick={() => openStaffForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати</button>
           </div>
 
           {showStaffForm && (
-            <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingStaff ? '✏️ Редагування' : '➕ Новий співробітник'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Звання *</label><input className="input" value={staffForm.rank} onChange={e => setStaffForm({ ...staffForm, rank: e.target.value })} placeholder="Полковник" /></div>
@@ -501,7 +501,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                   onDragStart={h.onDragStart}
                   onDragOver={h.onDragOver}
                   onDrop={h.onDrop}
-                  className="military-card p-4 flex items-center gap-4 group transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-4 flex items-center gap-4 group transition-all duration-300"
                   style={{
                     cursor: 'grab',
                     opacity: isDragging ? 0.4 : 1,
@@ -533,12 +533,12 @@ export const UnitGuideAdminPage: React.FC = () => {
       {activeTab === 'steps' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📝 Кроки прибуття</h2>
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📝 КРОКИ ПРИБУТТЯ</h2>
             <button onClick={() => openStepForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати крок</button>
           </div>
 
           {showStepForm && (
-            <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingStep ? '✏️ Редагування кроку' : '➕ Новий крок'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={stepForm.title} onChange={e => setStepForm({ ...stepForm, title: e.target.value })} placeholder="Реєстрація" /></div>
@@ -569,7 +569,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                   onDragStart={h.onDragStart}
                   onDragOver={h.onDragOver}
                   onDrop={h.onDrop}
-                  className="military-card p-5 flex items-center gap-5 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-5 transition-all duration-300"
                   style={{
                     cursor: 'grab',
                     opacity: isDragging ? 0.4 : 1,
@@ -578,7 +578,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                   }}
                 >
                   <div className="flex-shrink-0">{dragIcon}</div>
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 font-heading font-black text-lg" style={{ background: 'var(--gradient-gold)', color: 'var(--ab3-black)' }}>
+                  <div className="w-12 h-12 rounded-none border border-[var(--ab3-gold)] bg-black flex items-center justify-center flex-shrink-0 font-heading font-black text-lg" style={{ color: 'var(--ab3-gold)' }}>
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">

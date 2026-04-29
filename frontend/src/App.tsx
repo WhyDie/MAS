@@ -19,8 +19,14 @@ import { InviteCodesPage } from '@pages/InviteCodesPage';
 import { ProfilePage } from '@pages/ProfilePage';
 import { UnitGuidePage } from '@pages/UnitGuidePage';
 import { UnitGuideAdminPage } from '@pages/UnitGuideAdminPage';
+import { MentorDashboardPage } from '@pages/MentorDashboardPage';
+import { PsychologistDashboardPage } from '@pages/PsychologistDashboardPage';
 import { GuidePage } from '@pages/GuidePage';
+import { NoticeBoardPage } from '@pages/NoticeBoardPage';
+import { FAQPage } from '@pages/FAQPage';
 import { ResourceAdminPage } from '@pages/ResourceAdminPage';
+import { ReportsPage } from '@pages/ReportsPage';
+import { AchievementsPage } from '@pages/AchievementsPage';
 import { TrainingAdminPage } from '@pages/TrainingAdminPage';
 import { SimulatorAdminPage } from '@pages/SimulatorAdminPage';
 import { AIChatPage } from '@pages/AIChatPage';
@@ -50,11 +56,11 @@ function App() {
   const { user, token, setUser } = useAuthStore();
 
   useEffect(() => {
-    if (!user && token) {
+    if (token) {
       authService
         .validateToken()
         .then((response) => {
-          const { data } = response.data;
+          const data = response.data?.data || response.data;
           if (data?.user) {
             setUser(data.user);
           }
@@ -63,7 +69,7 @@ function App() {
           // Якщо токен недійсний, перехід на /login відбудеться через інтерцептор
         });
     }
-  }, [token, user, setUser]);
+  }, [token, setUser]);
 
   return (
     <BrowserRouter>
@@ -82,6 +88,8 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/unit-guide" element={<UnitGuidePage />} />
                   <Route path="/unit-guide-admin" element={<UnitGuideAdminPage />} />
+                  <Route path="/notice-board" element={<NoticeBoardPage />} />
+                  <Route path="/faq" element={<FAQPage />} />
                   <Route path="/ai-chat" element={<AIChatPage />} />
                   <Route path="/guide" element={<GuidePage />} />
                   <Route path="/guide-admin" element={<ResourceAdminPage />} />
@@ -98,7 +106,11 @@ function App() {
                   <Route path="/psychological-support" element={<PsychologicalSupportPage />} />
                   <Route path="/mentorship" element={<MentorshipPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/achievements" element={<AchievementsPage />} />
                   <Route path="/commander-dashboard" element={<CommanderDashboardPage />} />
+                  <Route path="/mentor-dashboard" element={<MentorDashboardPage />} />
+                  <Route path="/psychologist-dashboard" element={<PsychologistDashboardPage />} />
                   <Route path="/invite-codes" element={<InviteCodesPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

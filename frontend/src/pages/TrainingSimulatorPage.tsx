@@ -116,7 +116,7 @@ export const TrainingSimulatorPage: React.FC = () => {
 
   const handleStartSimulator = useCallback((simulator: TrainingSimulator) => {
     setCurrentSimulator(simulator);
-    const simQuestions = quizQuestions[simulator.type] || quizQuestions.quiz;
+    const simQuestions = simulator.quizContent || simulator.scenarioFlow || quizQuestions[simulator.type] || quizQuestions.quiz;
     setQuestions(simQuestions);
     setCurrentQuestion(0);
     setScore(0);
@@ -138,7 +138,7 @@ export const TrainingSimulatorPage: React.FC = () => {
       setIsComplete(true);
       // Save result to backend
       if (currentSimulator) {
-        api.post(`/training-simulators/${currentSimulator.id}/start`).catch(() => {});
+        api.post(`/training-simulators/${currentSimulator.id}/finish`, { score, total: questions.length }).catch(() => {});
       }
     } else {
       setCurrentQuestion(q => q + 1);
@@ -166,7 +166,7 @@ export const TrainingSimulatorPage: React.FC = () => {
       const passed = pct >= 60;
       return (
         <div className="animate-fade-in-up">
-          <div className="p-8 rounded-2xl text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+          <div className="p-8 rounded-none text-center bg-[#0a0a0a] border border-[#333]">
             <div className="text-7xl mb-6">{passed ? '🎉' : '📚'}</div>
             <h2 className="text-3xl font-heading font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               {passed ? 'Вітаємо!' : 'Спробуйте ще раз'}
@@ -185,8 +185,8 @@ export const TrainingSimulatorPage: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-center gap-4">
-              <button onClick={() => handleStartSimulator(currentSimulator)} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '14px' }}>🔄 Пройти ще раз</button>
-              <button onClick={handleBackToBrowse} className="btn" style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '14px 28px', fontSize: '14px' }}>← До бібліотеки</button>
+              <button onClick={() => handleStartSimulator(currentSimulator)} className="btn btn-primary rounded-none uppercase tracking-widest font-bold" style={{ padding: '14px 28px', fontSize: '14px' }}>🔄 Пройти ще раз</button>
+              <button onClick={handleBackToBrowse} className="btn rounded-none uppercase tracking-widest font-bold" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-muted)', padding: '14px 28px', fontSize: '14px' }}>← До бібліотеки</button>
             </div>
           </div>
         </div>
@@ -201,20 +201,20 @@ export const TrainingSimulatorPage: React.FC = () => {
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <button onClick={handleBackToBrowse} className="text-sm" style={{ color: 'var(--text-muted)' }}>← Назад</button>
-            <span className="text-sm font-bold" style={{ color: 'var(--ab3-gold)' }}>{currentQuestion + 1}/{questions.length}</span>
+            <button onClick={handleBackToBrowse} className="text-xs font-mono uppercase tracking-widest hover:text-white" style={{ color: 'var(--text-muted)' }}>← НАЗАД</button>
+            <span className="text-xs font-mono font-bold" style={{ color: 'var(--ab3-gold)' }}>{currentQuestion + 1}/{questions.length}</span>
           </div>
-          <div className="w-full rounded-full h-2" style={{ background: 'var(--ab3-gray-800)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ background: 'var(--gradient-gold)', width: `${((currentQuestion + 1) / questions.length) * 100}%` }} />
+          <div className="w-full rounded-none h-2 bg-[#222]">
+            <div className="h-full rounded-none transition-all duration-500" style={{ background: 'var(--ab3-gold)', width: `${((currentQuestion + 1) / questions.length) * 100}%` }} />
           </div>
         </div>
 
-        <div className="p-8 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-8 rounded-none bg-[#0a0a0a] border border-[#333]">
           <div className="flex items-center gap-3 mb-6">
             <span className="text-3xl">{currentSimulator.type === 'scenario' ? '🎯' : currentSimulator.type === 'quiz' ? '❓' : currentSimulator.type === 'combat_drill' ? '⚔️' : currentSimulator.type === 'survival' ? '🏕️' : '📡'}</span>
             <div>
-              <h2 className="text-2xl font-heading font-bold" style={{ color: 'var(--text-primary)' }}>{currentSimulator.title}</h2>
-              <span className="badge" style={{ background: `${diff.color}20`, color: diff.color, border: `1px solid ${diff.color}40`, fontSize: '11px' }}>{diff.label}</span>
+              <h2 className="text-2xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>{currentSimulator.title}</h2>
+              <span className="badge rounded-none font-mono uppercase tracking-widest mt-1" style={{ background: `${diff.color}20`, color: diff.color, border: `1px solid ${diff.color}40`, fontSize: '10px' }}>{diff.label}</span>
             </div>
           </div>
 
@@ -222,17 +222,17 @@ export const TrainingSimulatorPage: React.FC = () => {
             <p className="text-lg font-semibold mb-6" style={{ color: 'var(--text-primary)', fontSize: '18px', lineHeight: '1.5' }}>{q.question}</p>
             <div className="space-y-3">
               {q.options.map((option, idx) => {
-                let bg = 'var(--bg-glass)', border = 'var(--border-subtle)', color = 'var(--text-secondary)';
+                let bg = '#111', border = '#333', color = 'var(--text-secondary)';
                 if (answered !== null) {
-                  if (idx === q.correct) { bg = 'rgba(34, 197, 94, 0.15)'; border = 'rgba(34, 197, 94, 0.4)'; color = '#4ade80'; }
-                  else if (idx === answered && idx !== q.correct) { bg = 'rgba(239, 68, 68, 0.15)'; border = 'rgba(239, 68, 68, 0.4)'; color = '#f87171'; }
+                  if (idx === q.correct) { bg = 'rgba(34, 197, 94, 0.1)'; border = '#22c55e'; color = '#4ade80'; }
+                  else if (idx === answered && idx !== q.correct) { bg = 'rgba(239, 68, 68, 0.1)'; border = '#ef4444'; color = '#f87171'; }
                 }
                 return (
                   <button
                     key={idx}
                     onClick={() => handleAnswer(idx)}
                     disabled={answered !== null}
-                    className="w-full text-left p-4 rounded-xl transition-all duration-300 disabled:cursor-default"
+                    className="w-full text-left p-4 rounded-none transition-all duration-300 disabled:cursor-default"
                     style={{ background: bg, border: `1px solid ${border}`, color }}
                   >
                     <span className="font-bold mr-3">{String.fromCharCode(65 + idx)}.</span> {option}
@@ -246,10 +246,10 @@ export const TrainingSimulatorPage: React.FC = () => {
 
           {answered !== null && (
             <div className="flex justify-between items-center">
-              <p className="text-sm" style={{ color: answered === q.correct ? '#4ade80' : '#f87171' }}>
+              <p className="text-sm font-bold uppercase tracking-widest" style={{ color: answered === q.correct ? '#4ade80' : '#f87171' }}>
                 {answered === q.correct ? '✅ Правильно!' : '❌ Неправильно'}
               </p>
-              <button onClick={handleNextQuestion} className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '14px' }}>
+              <button onClick={handleNextQuestion} className="btn btn-primary rounded-none uppercase tracking-widest font-bold" style={{ padding: '12px 28px', fontSize: '14px' }}>
                 {currentQuestion + 1 >= questions.length ? 'Результат →' : 'Наступне →'}
               </button>
             </div>
@@ -264,10 +264,10 @@ export const TrainingSimulatorPage: React.FC = () => {
     return (
       <div className="animate-fade-in-up">
         <div className="mb-8">
-          <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📊 Ваша статистика</h2>
+          <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>ВАША СТАТИСТИКА</h2>
         </div>
         {loading ? (
-          <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+          <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
             <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
             <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
           </div>
@@ -279,7 +279,7 @@ export const TrainingSimulatorPage: React.FC = () => {
               { label: 'Середній бал', value: `${userStats.averageScore || 0}%`, icon: '📈', color: '#3b82f6' },
               { label: 'Час навчання', value: `${Math.round((userStats.totalTimeSpent || 0) / 60)} хв`, icon: '⏱', color: '#f59e0b' },
             ].map((stat, i) => (
-              <div key={i} className="glass-card p-6 animate-scale-in" style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}>
+              <div key={i} className="p-6 rounded-none animate-scale-in bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--ab3-gold)]" style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}>
                 <div className="flex items-center gap-4">
                   <span className="text-4xl">{stat.icon}</span>
                   <div>
@@ -291,7 +291,7 @@ export const TrainingSimulatorPage: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+          <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
             <div className="text-6xl mb-4">📊</div>
             <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Статистики немає</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Пройдіть хоча б один симулятор</p>
@@ -307,118 +307,117 @@ export const TrainingSimulatorPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-              🎮 Бойові Симулятори
+            <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+              БОЙОВІ СИМУЛЯТОРИ
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-              Інтерактивні сценарії, вікторини та завдання для розвитку навичок
+            <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              // ІНТЕРАКТИВНІ СЦЕНАРІЇ ТА ЗАВДАННЯ //
             </p>
           </div>
           {(user?.role === 'commander' || user?.role === 'admin' || user?.role === 'superadmin') && (
-            <button onClick={() => navigate('/simulator-admin')} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління</button>
+            <button onClick={() => navigate('/simulator-admin')} className="btn btn-primary rounded-none uppercase tracking-widest font-bold" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління</button>
           )}
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="p-3 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}>
+      <div className="p-3 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setError(''); }}
-              className="btn" style={{
+              className="btn rounded-none uppercase tracking-widest font-bold" style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
                 border: `1px solid ${activeTab === tab.id ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
                 padding: '10px 18px', fontSize: '13px',
               }}>
-              {tab.icon} {tab.label}
+              <span className="mr-2">{tab.icon}</span> {tab.label}
             </button>
           ))}
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
         </div>
       )}
 
       {/* Filters */}
-      <div className="p-4 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.15s', animationFillMode: 'both' }}>
-        <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--ab3-gold)', fontSize: '13px', letterSpacing: '0.5px' }}>Фільтри</h3>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => setSelectedType('')} className="btn" style={{
-            background: !selectedType ? 'var(--gradient-gold)' : 'transparent',
-            color: !selectedType ? 'var(--ab3-black)' : 'var(--text-muted)',
-            border: `1px solid ${!selectedType ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
-            padding: '8px 14px', fontSize: '12px',
-          }}>Усі типи</button>
-          {Object.entries(typeLabels).map(([key, label]) => (
-            <button key={key} onClick={() => setSelectedType(key)} className="btn" style={{
-              background: selectedType === key ? 'var(--gradient-gold)' : 'transparent',
-              color: selectedType === key ? 'var(--ab3-black)' : 'var(--text-muted)',
-              border: `1px solid ${selectedType === key ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
-              padding: '8px 14px', fontSize: '12px',
-            }}>{label}</button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {Object.entries(difficultyConfig).map(([key, cfg]) => (
-            <button key={key} onClick={() => setSelectedDifficulty(selectedDifficulty === key ? '' : key)} className="btn" style={{
-              background: selectedDifficulty === key ? cfg.color : 'transparent',
-              color: selectedDifficulty === key ? 'white' : cfg.color,
-              border: `1px solid ${selectedDifficulty === key ? cfg.color : `${cfg.color}40`}`,
-              padding: '8px 14px', fontSize: '12px',
-            }}>{cfg.label}</button>
-          ))}
-        </div>
-      </div>
+      <div className="p-4 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
+            <h3 className="font-mono text-xs font-bold mb-3 uppercase tracking-widest" style={{ color: 'var(--ab3-gold)' }}>[ ФІЛЬТРИ ]</h3>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => setSelectedType('')} className="btn rounded-none uppercase tracking-widest font-bold" style={{
+                background: !selectedType ? 'var(--gradient-gold)' : 'transparent',
+                color: !selectedType ? 'var(--ab3-black)' : 'var(--text-muted)',
+                border: `1px solid ${!selectedType ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
+                padding: '8px 14px', fontSize: '12px',
+              }}>Усі типи</button>
+              {Object.entries(typeLabels).map(([key, label]) => (
+                <button key={key} onClick={() => setSelectedType(key)} className="btn rounded-none uppercase tracking-widest font-bold" style={{
+                  background: selectedType === key ? 'var(--gradient-gold)' : 'transparent',
+                  color: selectedType === key ? 'var(--ab3-black)' : 'var(--text-muted)',
+                  border: `1px solid ${selectedType === key ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
+                  padding: '8px 14px', fontSize: '12px',
+                }}>{label}</button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {Object.entries(difficultyConfig).map(([key, cfg]) => (
+                <button key={key} onClick={() => setSelectedDifficulty(selectedDifficulty === key ? '' : key)} className="btn rounded-none uppercase tracking-widest font-bold" style={{
+                  background: selectedDifficulty === key ? cfg.color : 'transparent',
+                  color: selectedDifficulty === key ? 'white' : cfg.color,
+                  border: `1px solid ${selectedDifficulty === key ? cfg.color : `${cfg.color}40`}`,
+                  padding: '8px 14px', fontSize: '12px',
+                }}>{cfg.label}</button>
+              ))}
+            </div>
+          </div>
 
-      {/* Simulators Grid */}
-      {loading ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
-          <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
-          <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
-        </div>
-      ) : simulators.length === 0 ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
-          <div className="text-6xl mb-4">🎮</div>
-          <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Симуляторів не знайдено</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Спробуйте змінити фільтри</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {simulators.map((sim, index) => {
-            const diff = difficultyConfig[sim.difficulty] || { label: sim.difficulty, color: '#6b7280' };
-            return (
-              <div key={sim.id} className="military-card p-6 animate-fade-in-up" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
-                <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="badge badge-gold">{typeLabels[sim.type] || sim.type}</span>
-                  <span className="badge" style={{ background: `${diff.color}20`, color: diff.color, border: `1px solid ${diff.color}40`, fontSize: '11px' }}>{diff.label}</span>
-                </div>
-                <h3 className="text-lg font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>{sim.title}</h3>
-                <p className="text-sm mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>{sim.description}</p>
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  <div className="text-center p-2 rounded-lg" style={{ background: 'var(--bg-glass)' }}>
-                    <p className="text-lg font-bold" style={{ color: '#fbbf24', fontSize: '16px' }}>⏱ {sim.estimatedMinutes}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>хвилин</p>
+          {loading ? (
+            <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
+              <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
+              <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
+            </div>
+          ) : simulators.length === 0 ? (
+            <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
+              <div className="text-6xl mb-4">🎮</div>
+              <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Симуляторів не знайдено</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Спробуйте змінити фільтри</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {simulators.map((sim, index) => {
+                const diff = difficultyConfig[sim.difficulty] || { label: sim.difficulty, color: '#6b7280' };
+                return (
+                  <div key={sim.id} className="military-card rounded-none p-6 animate-fade-in-up bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--ab3-gold)]" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                    <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="badge rounded-none font-mono uppercase tracking-widest bg-[#111] border border-[var(--ab3-gold)] text-[var(--ab3-gold)] text-[10px]">{typeLabels[sim.type] || sim.type}</span>
+                      <span className="badge rounded-none font-mono uppercase tracking-widest" style={{ background: `${diff.color}15`, color: diff.color, border: `1px solid ${diff.color}`, fontSize: '10px' }}>{diff.label}</span>
+                    </div>
+                    <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>{sim.title}</h3>
+                    <p className="font-mono text-xs mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>{sim.description}</p>
+                    <div className="grid grid-cols-3 gap-3 mb-5">
+                      <div className="text-center p-2 rounded-none bg-[#111] border border-[#222]">
+                        <p className="text-lg font-bold" style={{ color: '#fbbf24', fontSize: '16px' }}>⏱ {sim.estimatedMinutes}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>хвилин</p>
+                      </div>
+                      <div className="text-center p-2 rounded-none bg-[#111] border border-[#222]">
+                        <p className="text-lg font-bold" style={{ color: '#4ade80', fontSize: '16px' }}>{sim.averageScore}%</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>сер. бал</p>
+                      </div>
+                      <div className="text-center p-2 rounded-none bg-[#111] border border-[#222]">
+                        <p className="text-lg font-bold" style={{ color: '#60a5fa', fontSize: '16px' }}>{sim.completionCount}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>пройдено</p>
+                      </div>
+                    </div>
+                    <button onClick={() => handleStartSimulator(sim)} className="btn btn-primary rounded-none uppercase tracking-widest font-bold w-full" style={{ padding: '12px 18px', fontSize: '13px' }}>▶️ Розпочати</button>
                   </div>
-                  <div className="text-center p-2 rounded-lg" style={{ background: 'var(--bg-glass)' }}>
-                    <p className="text-lg font-bold" style={{ color: '#4ade80', fontSize: '16px' }}>{sim.averageScore}%</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>сер. бал</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg" style={{ background: 'var(--bg-glass)' }}>
-                    <p className="text-lg font-bold" style={{ color: '#60a5fa', fontSize: '16px' }}>{sim.completionCount}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '10px' }}>пройдено</p>
-                  </div>
-                </div>
-                <button onClick={() => handleStartSimulator(sim)} className="btn btn-primary w-full" style={{ padding: '12px 18px', fontSize: '13px' }}>▶️ Розпочати</button>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
-    </div>
   );
 };

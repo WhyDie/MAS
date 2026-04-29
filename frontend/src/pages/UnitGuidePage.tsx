@@ -80,18 +80,27 @@ export const UnitGuidePage: React.FC = () => {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-          🏢 Довідник по частині
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-          Де що знаходиться, хто за що відповідає, як діяти коли ви прибули
-        </p>
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+              ДОВІДНИК ПО ЧАСТИНІ
+            </h1>
+            <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              // НАВІГАЦІЯ ТА КОНТАКТИ //
+            </p>
+          </div>
+          {canManage && (
+            <button onClick={() => navigate('/unit-guide-admin')} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>
+              ⚙️ Управління довідником
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
       <div
-        className="p-3 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
+        className="p-3 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+        style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
       >
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
@@ -111,21 +120,6 @@ export const UnitGuidePage: React.FC = () => {
               {tab.label}
             </button>
           ))}
-          {canManage && (
-            <button
-              onClick={() => navigate('/unit-guide-admin')}
-              className="btn"
-              style={{
-                background: 'var(--ab3-gold-glow)',
-                border: '1px solid rgba(201, 162, 39, 0.3)',
-                color: 'var(--ab3-gold)',
-                padding: '10px 18px',
-                fontSize: '13px',
-              }}
-            >
-              ⚙️ Управління
-            </button>
-          )}
         </div>
       </div>
       {activeTab === 'rooms' && (
@@ -151,7 +145,7 @@ export const UnitGuidePage: React.FC = () => {
           </div>
 
           {/* Floor Legend */}
-          <div className="flex flex-wrap gap-4 mb-6 p-4 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+          <div className="flex flex-wrap gap-4 mb-6 p-4 rounded-none bg-[#111] border border-[#333]">
             {[
               { floor: '0', label: '1 поверх (партер)' },
               { floor: '1', label: '2 поверх' },
@@ -172,7 +166,7 @@ export const UnitGuidePage: React.FC = () => {
               return (
                 <div
                   key={room.name}
-                  className="military-card p-5 animate-fade-in-up"
+                  className="military-card rounded-none p-5 animate-fade-in-up bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:border-[var(--ab3-gold)]"
                   style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both', borderLeft: `4px solid ${floorColor}` }}
                 >
                   <div className="flex items-start gap-3 mb-3">
@@ -210,7 +204,7 @@ export const UnitGuidePage: React.FC = () => {
       {/* Staff Tab */}
       {activeTab === 'staff' && (
         <div className="animate-fade-in-up">
-          <div className="overflow-x-auto rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+          <div className="overflow-x-auto rounded-none bg-[#050505] border border-[#333]">
             <table className="w-full">
               <thead>
                 <tr>
@@ -250,8 +244,7 @@ export const UnitGuidePage: React.FC = () => {
       {activeTab === 'arrival' && (
         <div className="animate-fade-in-up">
           <div
-            className="p-6 rounded-2xl mb-6"
-            style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)' }}
+            className="p-6 rounded-none mb-6 bg-[#0a0a0a] border border-[#333]"
           >
             <h2 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
               📝 Порядок дій при прибутті до військової частини
@@ -263,12 +256,12 @@ export const UnitGuidePage: React.FC = () => {
 
           <div className="space-y-4">
             {loading ? (
-              <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+              <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
                 <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
                 <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
               </div>
             ) : arrivalSteps.length === 0 ? (
-              <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+              <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
                 <div className="text-6xl mb-4">📝</div>
                 <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Кроків ще не додано</h3>
                 <p style={{ color: 'var(--text-muted)' }}>Командир може додати кроки через панель управління</p>
@@ -277,12 +270,12 @@ export const UnitGuidePage: React.FC = () => {
               arrivalSteps.map((step, index) => (
                 <div
                   key={step.id}
-                  className="military-card p-6 animate-fade-in-up"
+                  className="military-card rounded-none p-6 animate-fade-in-up bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:border-[var(--ab3-gold)]"
                   style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
                 >
                   <div className="flex items-start gap-5">
                     <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 font-heading font-black text-lg"
+                      className="w-12 h-12 rounded-none border border-[var(--ab3-gold)] bg-black flex items-center justify-center flex-shrink-0 font-heading font-black text-lg"
                       style={{ background: 'var(--gradient-gold)', color: 'var(--ab3-black)' }}
                     >
                       {index + 1}

@@ -26,19 +26,22 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ icon, title, description, path,
   return (
     <button
       onClick={() => navigate(path)}
-      className="military-card group p-6 text-left w-full cursor-pointer animate-fade-in-up"
-      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
+      className="group p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-[var(--ab3-gold)] hover:bg-[#111]"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both', borderRadius: '2px' }}
     >
-      {/* Top accent line with color */}
-      <div
-        className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
-      />
+      {/* Tactical Targeting Brackets (Visible on Hover) */}
+      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      {/* Background Glow Pulse */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${color}, transparent 70%)` }} />
 
       <div className="flex items-start gap-5">
         {/* Icon Container */}
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
+          className="w-14 h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333]"
           style={{ background: `${glowColor}`, color: color, boxShadow: `0 0 0 0 ${color}` }}
         >
           {icon}
@@ -47,19 +50,19 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ icon, title, description, path,
         {/* Content */}
         <div className="flex-1 min-w-0">
           <h3
-            className="text-lg font-heading font-bold mb-2 transition-colors duration-300"
-            style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}
+            className="text-lg font-heading font-black mb-2 transition-colors duration-300 uppercase tracking-wider"
+            style={{ color: 'var(--text-primary)', fontSize: '16px', lineHeight: '1.3' }}
           >
             {title}
           </h3>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+          <p className="text-sm leading-relaxed font-mono" style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5' }}>
             {description}
           </p>
         </div>
 
         {/* Arrow */}
         <div
-          className="opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-x-2 flex-shrink-0 self-center"
+          className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 flex-shrink-0 self-center"
           style={{ color: color }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -73,19 +76,20 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ icon, title, description, path,
 
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode; color: string; delay?: number }> = ({ label, value, icon, color, delay = 0 }) => (
   <div
-    className="glass-card p-5 animate-scale-in"
-    style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
+    className="p-5 animate-scale-in transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#222] relative overflow-hidden group"
+    style={{ animationDelay: `${delay}ms`, animationFillMode: 'both', borderLeft: `3px solid ${color}` }}
   >
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#111] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     <div className="flex items-center gap-4">
       <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 hover:scale-110"
-        style={{ background: `${color}15`, color: color }}
+        className="w-12 h-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 opacity-70"
+        style={{ color: color }}
       >
         {icon}
       </div>
-      <div>
-        <p className="text-3xl font-heading font-black" style={{ color: color, fontSize: '28px', lineHeight: '1.1' }}>{value}</p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)', fontSize: '12px', letterSpacing: '0.5px' }}>{label}</p>
+      <div className="relative z-10">
+        <p className="text-3xl font-mono font-bold tracking-tighter" style={{ color: 'var(--text-primary)', fontSize: '28px', lineHeight: '1.1' }}>{value}</p>
+        <p className="text-xs mt-1 uppercase font-bold tracking-widest" style={{ color: color, fontSize: '10px' }}>{label}</p>
       </div>
     </div>
   </div>
@@ -210,58 +214,52 @@ export const HomePage: React.FC = () => {
     <div className="space-y-8 lg:space-y-10 pb-12">
       {/* Hero Section */}
       <div
-        className="relative overflow-hidden rounded-3xl animate-fade-in-up"
-        style={{ background: 'var(--gradient-dark)', border: '1px solid var(--border-subtle)', animationFillMode: 'both' }}
+        className="relative overflow-hidden animate-fade-in-up border border-[#333] bg-[#050505] rounded-none"
+        style={{ animationFillMode: 'both' }}
       >
         {/* Background Effects */}
-        <div className="absolute inset-0 bg-grid-pattern" />
-        <div
-          className="absolute -top-20 -right-20 w-[500px] h-[500px] animate-float"
-          style={{ background: 'radial-gradient(circle, rgba(201, 162, 39, 0.08) 0%, transparent 70%)', animationDelay: '0s' }}
-        />
-        <div
-          className="absolute -bottom-20 -left-20 w-[400px] h-[400px] animate-float"
-          style={{ background: 'radial-gradient(circle, rgba(74, 93, 35, 0.12) 0%, transparent 70%)', animationDelay: '1s' }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]"
-          style={{ background: 'radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%)' }}
-        />
+        <div className="absolute inset-0 bg-[url('/backgrounds/grid.svg')] opacity-10 bg-repeat" style={{ backgroundSize: '30px 30px' }} />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[var(--ab3-gold)]/5 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+        
+        {/* Tactical UI Lines */}
+        <div className="absolute top-4 left-4 w-8 h-[1px] bg-[var(--ab3-gold)] opacity-50" />
+        <div className="absolute top-4 left-4 w-[1px] h-8 bg-[var(--ab3-gold)] opacity-50" />
 
         <div className="relative z-10 p-6 sm:p-8 lg:p-12">
           {/* Logo + Title */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8">
             <div
-              className="w-20 h-20 rounded-3xl flex items-center justify-center animate-float"
-              style={{ background: 'var(--gradient-gold)', boxShadow: '0 8px 40px rgba(201, 162, 39, 0.25)' }}
+              className="w-16 h-16 flex items-center justify-center border border-[var(--ab3-gold)] bg-black"
             >
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#080808"/>
+                <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="var(--ab3-gold)"/>
               </svg>
             </div>
             <div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-black text-gradient-gold mb-3 animate-glow-pulse" style={{ letterSpacing: '2px', lineHeight: '1.1' }}>
-                СИСТЕМА АДАПТАЦІЇ
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-red-600 animate-pulse" />
+                <span className="font-mono text-xs text-red-500 uppercase tracking-widest">Система активна</span>
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-black text-white mb-2 uppercase tracking-tighter" style={{ lineHeight: '1.1' }}>
+                АДАПТАЦІЯ <span style={{ color: 'var(--ab3-gold)' }}>БІЙЦЯ</span>
               </h1>
-              <p className="text-base lg:text-lg" style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-                Платформа цифрової трансформації адаптації військовослужбовців ЗСУ
+              <p className="font-mono text-sm uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                // Платформа підготовки та управління //
               </p>
             </div>
           </div>
 
           {/* Welcome Message */}
           <div
-            className="p-6 lg:p-8 rounded-2xl mb-8 animate-fade-in-up"
-            style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-subtle)', animationDelay: '0.2s', animationFillMode: 'both' }}
+            className="p-6 lg:p-8 mb-8 animate-fade-in-up border-l-2 border-[var(--ab3-gold)] bg-[#111]/80 backdrop-blur-sm"
+            style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
           >
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-4xl animate-float">🇺🇦</span>
-              <h2 className="text-2xl lg:text-3xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '26px', lineHeight: '1.3' }}>
-                Вітаємо, {user?.firstName || 'Військовослужбовцю'}!
-              </h2>
-            </div>
-            <p className="text-base lg:text-lg leading-relaxed" style={{ color: 'var(--text-secondary)', fontSize: '16px', lineHeight: '1.7' }}>
-              Оберіть модуль для початку роботи. Кожен модуль надає необхідні інструменти для вашої адаптації, навчання та професійного розвитку. Система розроблена для максимальної ефективності та зручності.
+            <h2 className="text-xl lg:text-2xl font-heading font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-primary)' }}>
+              Особовий склад: {user?.firstName || 'Військовослужбовець'}
+            </h2>
+            <p className="font-mono text-sm" style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
+              ДОСТУП ДО МОДУЛІВ НАВЧАННЯ ТА УПРАВЛІННЯ ВІДКРИТО. ОБЕРІТЬ ВІДПОВІДНИЙ РОЗДІЛ ДЛЯ ПРОДОВЖЕННЯ ПІДГОТОВКИ АБО КООРДИНАЦІЇ ПІДРОЗДІЛУ.
             </p>
           </div>
 
@@ -302,9 +300,9 @@ export const HomePage: React.FC = () => {
       {/* Module Grid */}
       <div>
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-1.5 h-10 rounded-full animate-pulse-glow" style={{ background: 'var(--gradient-gold)' }} />
-          <h2 className="text-2xl lg:text-3xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '28px', lineHeight: '1.2' }}>
-            Модулі Системи
+          <div className="w-3 h-8 bg-[var(--ab3-gold)]" />
+          <h2 className="text-2xl lg:text-3xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
+            МОДУЛІ <span className="text-white/30 font-light">/ СИСТЕМИ</span>
           </h2>
         </div>
 
@@ -319,62 +317,62 @@ export const HomePage: React.FC = () => {
       {(user?.role === 'commander' || user?.role === 'admin' || user?.role === 'superadmin') && (
         <div className="space-y-4">
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-1.5 h-10 rounded-full animate-pulse-glow" style={{ background: 'var(--gradient-blue)' }} />
-            <h2 className="text-2xl lg:text-3xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '28px', lineHeight: '1.2' }}>
-              Управління Підрозділом
+            <div className="w-3 h-8 bg-blue-500" />
+            <h2 className="text-2xl lg:text-3xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
+              КОМАНДУВАННЯ <span className="text-white/30 font-light">/ УПРАВЛІННЯ</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
-              className="military-card p-6 cursor-pointer group animate-fade-in-up"
-              style={{ animationDelay: '500ms', animationFillMode: 'both' }}
+              className="group p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-blue-500 hover:bg-[#111]"
+              style={{ animationDelay: '500ms', animationFillMode: 'both', borderRadius: '2px' }}
               onClick={() => navigate('/commander-dashboard')}
             >
-              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-blue)' }} />
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="flex items-center gap-5">
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
-                  style={{ background: 'var(--ab3-blue-glow)', color: '#60a5fa' }}
+                  className="w-14 h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333] bg-[#1a1a1a]"
+                  style={{ color: '#3b82f6' }}
                 >
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><line x1="12" y1="20" x2="12" y2="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="18" y1="20" x2="18" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="6" y1="20" x2="6" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-heading font-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
+                  <h3 className="text-lg font-heading font-black mb-2 uppercase tracking-wider" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>
                     Панель Командира
                   </h3>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+                  <p className="font-mono text-sm" style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5' }}>
                     Аналітика підрозділу, матриця компетенцій, управління розпорядком та контроль навчання
                   </p>
                 </div>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-2 flex-shrink-0 self-center" style={{ color: '#60a5fa' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1 flex-shrink-0 self-center" style={{ color: '#3b82f6' }}>
                   <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
             </div>
 
             <div
-              className="military-card p-6 cursor-pointer group animate-fade-in-up"
-              style={{ animationDelay: '550ms', animationFillMode: 'both' }}
+              className="group p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-[var(--ab3-gold)] hover:bg-[#111]"
+              style={{ animationDelay: '550ms', animationFillMode: 'both', borderRadius: '2px' }}
               onClick={() => navigate('/invite-codes')}
             >
-              <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
+              <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="flex items-center gap-5">
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
-                  style={{ background: 'var(--ab3-gold-glow)', color: '#c9a227' }}
+                  className="w-14 h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333] bg-[#1a1a1a]"
+                  style={{ color: 'var(--ab3-gold)' }}
                 >
                   <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-heading font-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
+                  <h3 className="text-lg font-heading font-black mb-2 uppercase tracking-wider" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>
                     Коди Доступу
                   </h3>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+                  <p className="font-mono text-sm" style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: '1.5' }}>
                     Створення та управління кодами запрошення для нових членів підрозділу
                   </p>
                 </div>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:translate-x-2 flex-shrink-0 self-center" style={{ color: '#c9a227' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-1 flex-shrink-0 self-center" style={{ color: 'var(--ab3-gold)' }}>
                   <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>

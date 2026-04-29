@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '@services/api';
 
 interface Soldier {
   name: string;
@@ -12,39 +13,32 @@ interface Soldier {
 }
 
 export const CommanderDashboardPage: React.FC = () => {
-  const [selectedMetric, setSelectedMetric] = useState<'competencies' | 'training' | 'duties'>('competencies');
+  const [selectedMetric, setSelectedMetric] = useState<'competencies' | 'training' | 'duties' | 'reports'>('competencies');
+  const [loading, setLoading] = useState(true);
+  const [unitStats, setUnitStats] = useState({ totalSoldiers: 0, completedTraining: 0, averageScore: 0, dutiesAssigned: 0, onLeave: 0, onMedical: 0 });
+  const [competencyMatrix, setCompetencyMatrix] = useState<Soldier[]>([]);
+  const [trainingProgress, setTrainingProgress] = useState<any[]>([]);
+  const [dutySchedule, setDutySchedule] = useState<any[]>([]);
 
-  const unitStats = {
-    totalSoldiers: 45,
-    completedTraining: 28,
-    averageScore: 82,
-    dutiesAssigned: 15,
-    onLeave: 3,
-    onMedical: 2,
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/commander/dashboard');
+      const data = res.data.data || res.data;
+      if (data.unitStats) setUnitStats(data.unitStats);
+      if (data.competencyMatrix) setCompetencyMatrix(data.competencyMatrix);
+      if (data.trainingProgress) setTrainingProgress(data.trainingProgress);
+      if (data.dutySchedule) setDutySchedule(data.dutySchedule);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const competencyMatrix: Soldier[] = [
-    { name: 'Петренко О.В.', rank: 'Сержант', tacticalMed: 85, weapons: 92, topography: 76, leadership: 88, completedModules: 12, totalModules: 15 },
-    { name: 'Іваненко І.П.', rank: 'Боєць', tacticalMed: 72, weapons: 80, topography: 65, leadership: 70, completedModules: 9, totalModules: 15 },
-    { name: 'Миколенко М.С.', rank: 'Боєць', tacticalMed: 88, weapons: 85, topography: 82, leadership: 79, completedModules: 13, totalModules: 15 },
-    { name: 'Андрієнко А.О.', rank: 'Боєць', tacticalMed: 65, weapons: 70, topography: 58, leadership: 62, completedModules: 7, totalModules: 15 },
-    { name: 'Сергієнко С.М.', rank: 'Боєць', tacticalMed: 91, weapons: 88, topography: 89, leadership: 85, completedModules: 14, totalModules: 15 },
-  ];
-
-  const trainingProgress = [
-    { module: 'Тактична медицина', completed: 28, total: 45, percentage: 62 },
-    { module: 'Озброєння та стрільба', completed: 35, total: 45, percentage: 78 },
-    { module: 'Топографія та навігація', completed: 22, total: 45, percentage: 49 },
-    { module: 'Радіозвʼязок', completed: 40, total: 45, percentage: 89 },
-    { module: 'Виживання в польових умовах', completed: 18, total: 45, percentage: 40 },
-  ];
-
-  const dutySchedule = [
-    { date: '2026-04-05', duty: 'Чергування на КПП', soldiers: 8, commander: 'Петренко О.В.', status: 'completed' as const },
-    { date: '2026-04-06', duty: 'Патруль периметру', soldiers: 6, commander: 'Сергієнко С.М.', status: 'ongoing' as const },
-    { date: '2026-04-07', duty: 'Моніторинг звʼязку', soldiers: 4, commander: 'Петренко О.В.', status: 'scheduled' as const },
-    { date: '2026-04-08', duty: 'Охорона складу', soldiers: 5, commander: 'Миколенко М.С.', status: 'scheduled' as const },
-  ];
 
   const getAverageScore = (soldier: Soldier): number => {
     return Math.round((soldier.tacticalMed + soldier.weapons + soldier.topography + soldier.leadership) / 4);
@@ -59,21 +53,27 @@ export const CommanderDashboardPage: React.FC = () => {
     }
   };
 
+  const pendingReports = [
+    { id: 101, soldier: 'Іваненко І.П.', type: 'Рапорт на заміну елементу екіпірування', date: '24.10.2023' },
+    { id: 102, soldier: 'Петренко О.В.', type: 'Рапорт на звільнення за сімейними обставинами', date: '25.10.2023' },
+  ];
+
   const tabs = [
     { id: 'competencies' as const, label: 'Матриця компетенцій', icon: '📈' },
     { id: 'training' as const, label: 'Прогрес навчання', icon: '📚' },
     { id: 'duties' as const, label: 'Графік нарядів', icon: '📋' },
+    { id: 'reports' as const, label: 'Рапорти (2)', icon: '📄' },
   ];
 
   return (
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-          📊 Панель Командира
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+          ПАНЕЛЬ КОМАНДИРА
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-          Аналітика підрозділу, управління навчанням та розпорядком
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
+          // АНАЛІТИКА ТА УПРАВЛІННЯ ПІДРОЗДІЛОМ //
         </p>
       </div>
 
@@ -89,8 +89,8 @@ export const CommanderDashboardPage: React.FC = () => {
         ].map((stat, i) => (
           <div
             key={i}
-            className="glass-card p-5 animate-scale-in"
-            style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}
+            className="p-5 animate-scale-in transition-all duration-300 hover:-translate-y-1 rounded-none border border-[#333] bg-[#0a0a0a]"
+            style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both', borderLeft: `3px solid ${stat.color}` }}
           >
             <div className="flex items-center gap-3">
               <span className="text-3xl">{stat.icon}</span>
@@ -105,8 +105,8 @@ export const CommanderDashboardPage: React.FC = () => {
 
       {/* Tab Navigation */}
       <div
-        className="p-3 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.3s', animationFillMode: 'both' }}
+        className="p-3 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+        style={{ animationDelay: '0.3s', animationFillMode: 'both' }}
       >
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
@@ -117,7 +117,7 @@ export const CommanderDashboardPage: React.FC = () => {
               style={{
                 background: selectedMetric === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: selectedMetric === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
-                border: `1px solid ${selectedMetric === tab.id ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
+                  border: `1px solid ${selectedMetric === tab.id ? 'var(--ab3-gold)' : '#333'}`,
                 padding: '10px 18px',
                 fontSize: '13px',
               }}
@@ -132,10 +132,10 @@ export const CommanderDashboardPage: React.FC = () => {
       {/* Competency Matrix */}
       {selectedMetric === 'competencies' && (
         <div
-          className="rounded-2xl overflow-hidden animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
+          className="rounded-none overflow-hidden animate-fade-in-up bg-[#050505] border border-[#333]"
+          style={{ animationDelay: '0.35s', animationFillMode: 'both' }}
         >
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="p-6 border-b border-[#333]">
             <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
               📈 Матриця компетенцій особового складу
             </h2>
@@ -154,7 +154,7 @@ export const CommanderDashboardPage: React.FC = () => {
                 {competencyMatrix.map((soldier) => {
                   const avg = getAverageScore(soldier);
                   return (
-                    <tr key={soldier.name} style={{ transition: 'background 0.25s ease' }}>
+                    <tr key={soldier.name} className="transition-all duration-300 hover:bg-[rgba(255,255,255,0.03)] hover:shadow-sm">
                       <td style={{ padding: '14px 18px' }}>
                         <p className="font-semibold" style={{ color: 'var(--text-primary)', fontSize: '14px' }}>
                           {soldier.rank} {soldier.name}
@@ -163,8 +163,8 @@ export const CommanderDashboardPage: React.FC = () => {
                       {[soldier.tacticalMed, soldier.weapons, soldier.topography, soldier.leadership].map((score, i) => (
                         <td key={i} style={{ padding: '14px 18px' }}>
                           <div className="flex items-center gap-2">
-                            <div className="rounded-full h-2 overflow-hidden flex-1" style={{ background: 'var(--ab3-gray-800)' }}>
-                              <div className="h-full rounded-full" style={{
+                            <div className="rounded-none h-2 overflow-hidden flex-1" style={{ background: 'var(--ab3-gray-800)' }}>
+                              <div className="h-full rounded-none" style={{
                                 width: `${score}%`,
                                 background: score >= 85 ? 'var(--ab3-green)' : score >= 75 ? 'var(--ab3-amber)' : 'var(--ab3-red)',
                               }} />
@@ -193,8 +193,8 @@ export const CommanderDashboardPage: React.FC = () => {
       {/* Training Progress */}
       {selectedMetric === 'training' && (
         <div
-          className="p-6 rounded-2xl animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
+          className="p-6 rounded-none animate-fade-in-up bg-[#111] border border-[#333]"
+          style={{ backdropFilter: 'blur(12px)', animationDelay: '0.35s', animationFillMode: 'both' }}
         >
           <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
             📚 Прогрес навчання підрозділу
@@ -211,9 +211,9 @@ export const CommanderDashboardPage: React.FC = () => {
                     {module.completed}/{module.total} ({module.percentage}%)
                   </span>
                 </div>
-                <div className="w-full rounded-full h-3 overflow-hidden" style={{ background: 'var(--ab3-gray-800)' }}>
+                <div className="w-full rounded-none h-3 overflow-hidden" style={{ background: 'var(--ab3-gray-800)' }}>
                   <div
-                    className="h-full rounded-full transition-all duration-700"
+                    className="h-full rounded-none transition-all duration-700"
                     style={{
                       width: `${module.percentage}%`,
                       background: module.percentage >= 80 ? 'var(--ab3-green)' : module.percentage >= 50 ? 'var(--ab3-amber)' : 'var(--ab3-red)',
@@ -229,10 +229,10 @@ export const CommanderDashboardPage: React.FC = () => {
       {/* Duty Schedule */}
       {selectedMetric === 'duties' && (
         <div
-          className="rounded-2xl overflow-hidden animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
+          className="rounded-none overflow-hidden animate-fade-in-up bg-[#111] border border-[#333]"
+          style={{ backdropFilter: 'blur(12px)', animationDelay: '0.35s', animationFillMode: 'both' }}
         >
-          <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="p-6 border-b flex items-center justify-between border-[#333]">
             <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
               📋 Графік нарядів
             </h2>
@@ -241,7 +241,7 @@ export const CommanderDashboardPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
+          <div className="divide-y divide-[#333]">
             {dutySchedule.map((duty, index) => (
               <div
                 key={duty.date}
@@ -262,7 +262,7 @@ export const CommanderDashboardPage: React.FC = () => {
                       🎖️ {duty.commander}
                     </p>
                   </div>
-                  <button className="btn" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '8px 14px', fontSize: '12px' }}>
+                  <button className="btn" style={{ background: '#0a0a0a', border: '1px solid #333', color: 'var(--text-muted)', padding: '8px 14px', fontSize: '12px' }}>
                     ✏️ Редагувати
                   </button>
                 </div>
@@ -272,10 +272,36 @@ export const CommanderDashboardPage: React.FC = () => {
         </div>
       )}
 
+      {/* Digital Reports Review */}
+      {selectedMetric === 'reports' && (
+        <div
+          className="rounded-none overflow-hidden animate-fade-in-up bg-[#111] border border-[#333]"
+          style={{ backdropFilter: 'blur(12px)', animationDelay: '0.35s', animationFillMode: 'both' }}
+        >
+          <div className="p-6 border-b flex items-center justify-between border-[#333]">
+            <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📄 Розгляд рапортів</h2>
+          </div>
+          <div className="divide-y divide-[#333]">
+            {pendingReports.map(r => (
+              <div key={r.id} className="p-6 flex justify-between items-center flex-wrap gap-4 transition-colors hover:bg-[#1a1a1a]">
+                <div>
+                  <p className="font-bold text-lg text-white mb-2">{r.type}</p>
+                  <p className="text-sm text-gray-400">👤 <strong>{r.soldier}</strong> | 📅 {r.date}</p>
+                </div>
+                <div className="flex gap-2">
+                   <button className="btn" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', color: '#4ade80', padding: '8px 16px', fontSize: '12px' }}>✅ Затвердити</button>
+                   <button className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', padding: '8px 16px', fontSize: '12px' }}>❌ Відхилити</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Recommendations */}
       <div
-        className="p-6 rounded-2xl mt-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', borderLeft: '4px solid var(--ab3-amber)', animationDelay: '0.4s', animationFillMode: 'both' }}
+        className="p-6 rounded-none mt-8 animate-fade-in-up bg-[#111] border border-[#333] border-l-4 border-[#f59e0b]"
+        style={{ backdropFilter: 'blur(12px)', animationDelay: '0.4s', animationFillMode: 'both' }}
       >
         <h3 className="text-xl font-heading font-bold mb-4" style={{ color: 'var(--ab3-amber)', fontSize: '20px' }}>
           💡 Рекомендації системи

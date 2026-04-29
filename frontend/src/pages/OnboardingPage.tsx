@@ -118,7 +118,7 @@ export function OnboardingPage() {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
         </div>
       )}
@@ -141,24 +141,23 @@ export function OnboardingPage() {
         <div className="flex items-center justify-center py-12 relative z-10">
           <div className="max-w-2xl w-full text-center animate-fade-in-up">
             <div
-              className="inline-flex items-center justify-center w-28 h-28 rounded-3xl mb-8 animate-float"
-              style={{ background: 'var(--gradient-gold)', boxShadow: '0 8px 50px rgba(201, 162, 39, 0.3)' }}
+              className="inline-flex items-center justify-center w-24 h-24 rounded-none mb-8 border-2 border-[var(--ab3-gold)] bg-black"
             >
-              <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#080808"/></svg>
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="var(--ab3-gold)"/></svg>
             </div>
-            <h1 className="text-5xl font-heading font-black text-gradient-gold mb-4 animate-glow-pulse" style={{ letterSpacing: '3px', lineHeight: '1.1' }}>
+            <h1 className="text-5xl font-heading font-black uppercase tracking-widest text-white mb-4" style={{ lineHeight: '1.1' }}>
               ЛАСКАВО ПРОСИМО!
             </h1>
-            <p className="text-xl mb-2" style={{ color: 'var(--text-secondary)', fontSize: '20px' }}>
+            <p className="text-xl mb-2 uppercase tracking-widest font-bold" style={{ color: 'var(--text-secondary)', fontSize: '20px' }}>
               {user?.firstName ? `${user.firstName},` : ''} новобранець!
             </p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>
+            <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
               Персоналізований план адаптації для вас
             </p>
 
             <div
-              className="p-8 rounded-2xl my-8 animate-fade-in-up"
-              style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-subtle)', animationDelay: '0.15s', animationFillMode: 'both' }}
+              className="p-8 rounded-none my-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+              style={{ animationDelay: '0.15s', animationFillMode: 'both' }}
             >
               <p className="mb-4" style={{ color: 'var(--text-secondary)', fontSize: '16px', lineHeight: '1.7' }}>
                 Цей модуль розробить для вас індивідуальну <strong style={{ color: 'var(--ab3-gold)' }}>дорожню карту </strong>
@@ -176,8 +175,8 @@ export function OnboardingPage() {
               ].map((item, i) => (
                 <div
                   key={i}
-                  className="p-6 rounded-2xl animate-scale-in"
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: `${0.2 + i * 0.1}s`, animationFillMode: 'both' }}
+                  className="p-6 rounded-none animate-scale-in transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)]"
+                  style={{ animationDelay: `${0.2 + i * 0.1}s`, animationFillMode: 'both' }}
                 >
                   <div className="text-4xl mb-3">{item.icon}</div>
                   <h3 className="font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{item.title}</h3>
@@ -188,7 +187,7 @@ export function OnboardingPage() {
 
             <button
               onClick={() => setStep('profile')}
-              className="btn btn-primary w-full py-5 text-lg"
+              className="btn btn-primary w-full py-5 text-lg transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
             >
               Розпочати опитування →
             </button>
@@ -201,24 +200,24 @@ export function OnboardingPage() {
         <div className="py-8 relative z-10">
           <div className="max-w-2xl mx-auto">
             <div className="mb-8 animate-fade-in-up">
-              <h2 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>
-                📋 Ваш профіль
+              <h2 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>
+                ВАШ ПРОФІЛЬ
               </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>Розкажіть про себе, щоб ми краще вас зрозуміли</p>
-              <div className="w-full rounded-full h-2 mt-4" style={{ background: 'var(--ab3-gray-800)' }}>
-                <div className="h-full rounded-full transition-all duration-500" style={{ background: 'var(--gradient-gold)', width: '20%' }} />
+              <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// РОЗКАЖІТЬ ПРО СЕБЕ //</p>
+              <div className="w-full rounded-none h-2 mt-4 bg-[#222]">
+                <div className="h-full rounded-none transition-all duration-500" style={{ background: 'var(--ab3-gold)', width: '20%' }} />
               </div>
             </div>
 
             {error && (
-              <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+              <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
                 <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
               </div>
             )}
 
             <div className="space-y-4">
               {/* Military Experience */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.05s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.05s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>📜 Військовий досвід</label>
                 <select
                   value={answers.militaryExperience}
@@ -233,7 +232,7 @@ export function OnboardingPage() {
               </div>
 
               {/* Education */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>🎓 Цивільна освіта</label>
                 <input
                   type="text"
@@ -245,7 +244,7 @@ export function OnboardingPage() {
               </div>
 
               {/* Specialization */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.15s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>🎯 Військова спеціалізація</label>
                 <input
                   type="text"
@@ -257,14 +256,14 @@ export function OnboardingPage() {
               </div>
 
               {/* Physical Fitness */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.2s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>💪 Фізична форма</label>
                 <div className="flex gap-3">
                   {[1, 2, 3, 4, 5].map(level => (
                     <button
                       key={level}
                       onClick={() => handleProfileChange('physicalFitness', level)}
-                      className="flex-1 py-3 rounded-xl font-bold text-lg transition-all duration-300"
+                      className="flex-1 py-3 rounded-none font-bold text-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-95"
                       style={{
                         background: answers.physicalFitness === level ? 'var(--gradient-gold)' : 'var(--bg-glass)',
                         color: answers.physicalFitness === level ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -279,7 +278,7 @@ export function OnboardingPage() {
               </div>
 
               {/* Concerns */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.25s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.25s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>😰 Ваші потреби</label>
                 <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Виберіть усе актуальне</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -294,7 +293,7 @@ export function OnboardingPage() {
                     <button
                       key={concern}
                       onClick={() => toggleConcern(concern)}
-                      className="p-3 rounded-xl text-sm font-semibold transition-all duration-300"
+                      className="p-3 rounded-none text-sm font-semibold transition-all duration-300"
                       style={{
                         background: answers.concerns.includes(concern) ? 'rgba(201, 162, 39, 0.15)' : 'var(--bg-glass)',
                         color: answers.concerns.includes(concern) ? 'var(--ab3-gold-light)' : 'var(--text-muted)',
@@ -308,7 +307,7 @@ export function OnboardingPage() {
               </div>
 
               {/* Skills */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.3s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>⭐ Ваші навички</label>
                 <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Що ви вже вмієте</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -323,7 +322,7 @@ export function OnboardingPage() {
                     <button
                       key={skill}
                       onClick={() => toggleSkill(skill)}
-                      className="p-3 rounded-xl text-sm font-semibold transition-all duration-300"
+                      className="p-3 rounded-none text-sm font-semibold transition-all duration-300"
                       style={{
                         background: answers.skills.includes(skill) ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-glass)',
                         color: answers.skills.includes(skill) ? '#4ade80' : 'var(--text-muted)',
@@ -337,7 +336,7 @@ export function OnboardingPage() {
               </div>
 
               {/* Learning Preference */}
-              <div className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}>
+              <div className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.35s', animationFillMode: 'both' }}>
                 <label className="block text-sm font-bold mb-4" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>🎓 Як вам краще вчитися?</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -349,7 +348,7 @@ export function OnboardingPage() {
                     <button
                       key={option.value}
                       onClick={() => handleProfileChange('preferredLearning', option.value)}
-                      className="p-4 rounded-xl font-semibold transition-all duration-300"
+                      className="p-4 rounded-none font-semibold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-95 border border-[#333]"
                       style={{
                         background: answers.preferredLearning === option.value ? 'var(--gradient-gold)' : 'var(--bg-glass)',
                         color: answers.preferredLearning === option.value ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -371,7 +370,7 @@ export function OnboardingPage() {
                 ].map(item => (
                   <label
                     key={item.key}
-                    className="flex items-center gap-4 cursor-pointer p-5 rounded-2xl transition-all duration-300"
+                    className="flex items-center gap-4 cursor-pointer p-5 rounded-none transition-all duration-300 border border-[#333] hover:-translate-y-1 bg-[#0a0a0a]"
                     style={{
                       background: (answers as any)[item.key] ? 'rgba(201, 162, 39, 0.08)' : 'var(--bg-card)',
                       border: `1px solid ${(answers as any)[item.key] ? 'rgba(201, 162, 39, 0.2)' : 'var(--border-subtle)'}`,
@@ -418,17 +417,17 @@ export function OnboardingPage() {
         <div className="py-8 relative z-10">
           <div className="max-w-4xl mx-auto">
             <div className="mb-8 animate-fade-in-up">
-              <h2 className="text-4xl font-heading font-black text-gradient-gold mb-3">🗺️ Дорожня карта</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '16px' }}>
-                Ваш персоналізований план адаптації на {trajectory.estimatedDuration} днів
+              <h2 className="text-4xl font-heading font-black uppercase tracking-widest text-white mb-3">ДОРОЖНЯ КАРТА</h2>
+              <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                // ВАШ ПЕРСОНАЛІЗОВАНИЙ ПЛАН НА {trajectory.estimatedDuration} ДНІВ //
               </p>
-              <div className="w-full rounded-full h-3 mt-4" style={{ background: 'var(--ab3-gray-800)' }}>
-                <div className="h-full rounded-full transition-all duration-500" style={{ background: 'var(--gradient-gold)', width: '30%' }} />
+              <div className="w-full rounded-none h-2 mt-4 bg-[#222]">
+                <div className="h-full rounded-none transition-all duration-500 bg-[var(--ab3-gold)]" style={{ width: '30%' }} />
               </div>
             </div>
 
             {error && (
-              <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+              <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
                 <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
               </div>
             )}
@@ -442,8 +441,8 @@ export function OnboardingPage() {
               ].map((stat, i) => (
                 <div
                   key={i}
-                  className="p-6 rounded-2xl animate-scale-in"
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}
+                  className="p-6 rounded-none animate-scale-in bg-[#0a0a0a] border border-[#333]"
+                  style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}
                 >
                   <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{stat.label}</p>
                   <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
@@ -452,12 +451,12 @@ export function OnboardingPage() {
             </div>
 
             {/* Trajectory */}
-            <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: '0.3s', animationFillMode: 'both' }}>
+            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Ваша траєкторія навчання</h3>
               <div className="space-y-3">
                 {trajectory.trajectory.map((module, idx) => (
                   <div key={idx} className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0" style={{ background: 'var(--gradient-gold)', color: 'var(--ab3-black)' }}>
+                    <div className="w-10 h-10 rounded-none border border-[var(--ab3-gold)] bg-black flex items-center justify-center font-bold text-sm flex-shrink-0" style={{ color: 'var(--ab3-gold)' }}>
                       {idx + 1}
                     </div>
                     <span style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>{module}</span>
@@ -469,10 +468,10 @@ export function OnboardingPage() {
             {/* Weekly Roadmap */}
             <div className="space-y-4 mb-8">
               {trajectory.roadmap.map((week) => (
-                <div key={week.week} className="p-6 rounded-2xl animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationDelay: `${0.35 + week.week * 0.05}s`, animationFillMode: 'both' }}>
+                <div key={week.week} className="p-6 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: `${0.35 + week.week * 0.05}s`, animationFillMode: 'both' }}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg" style={{ background: 'var(--gradient-gold)', color: 'var(--ab3-black)' }}>
+                      <div className="w-12 h-12 rounded-none border border-[var(--ab3-gold)] bg-black flex items-center justify-center font-black text-lg" style={{ color: 'var(--ab3-gold)' }}>
                         {week.week}
                       </div>
                       <span className="text-sm font-bold" style={{ color: 'var(--ab3-gold)' }}>Тиждень</span>
@@ -511,7 +510,7 @@ export function OnboardingPage() {
             </div>
 
             {/* Recommendations */}
-            <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderLeft: '4px solid var(--ab3-gold)', animationDelay: '0.5s', animationFillMode: 'both' }}>
+            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333] border-l-4 border-[var(--ab3-gold)]" style={{ animationDelay: '0.5s', animationFillMode: 'both' }}>
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--ab3-gold)' }}>💡 Особисті рекомендації</h3>
               <ul className="space-y-2">
                 {trajectory.personalRecommendations.map((rec, idx) => (
@@ -549,7 +548,7 @@ export function OnboardingPage() {
         <div className="flex items-center justify-center py-12 relative z-10">
           <div className="max-w-xl w-full text-center animate-scale-in">
             <div className="text-8xl mb-6 animate-bounce">✅</div>
-            <h1 className="text-5xl font-heading font-black text-gradient-gold mb-4 animate-glow-pulse">
+            <h1 className="text-5xl font-heading font-black uppercase tracking-widest text-white mb-4">
               УСПІШНО!
             </h1>
             <p className="text-xl mb-6" style={{ color: 'var(--text-secondary)' }}>
@@ -559,7 +558,7 @@ export function OnboardingPage() {
               Перенаправлення на головну...
             </p>
 
-            <div className="p-8 rounded-2xl mb-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-8 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
               <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Що далі?</h2>
               <ul className="text-left space-y-3">
                 {[

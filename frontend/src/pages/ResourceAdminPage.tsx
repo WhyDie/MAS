@@ -157,12 +157,12 @@ export const ResourceAdminPage: React.FC = () => {
 
       {/* Messages */}
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <div className="flex items-center gap-3"><span className="text-xl">✅</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span></div>
         </div>
       )}
@@ -175,7 +175,7 @@ export const ResourceAdminPage: React.FC = () => {
 
       {/* Form */}
       {showForm && (
-        <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingResource ? '✏️ Редагування ресурсу' : '➕ Новий ресурс'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -203,14 +203,14 @@ export const ResourceAdminPage: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <button onClick={saveResource} disabled={loading} className="btn btn-primary disabled:opacity-50" style={{ padding: '12px 24px', fontSize: '14px' }}>{loading ? '⏳...' : '💾 Зберегти'}</button>
-            <button onClick={() => setShowForm(false)} className="btn" style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '12px 24px', fontSize: '14px' }}>Скасувати</button>
+            <button onClick={() => setShowForm(false)} className="btn" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)', padding: '12px 24px', fontSize: '14px' }}>Скасувати</button>
           </div>
         </div>
       )}
 
       {/* Resources List with Drag & Drop */}
       {loading && !showForm ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
           <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
           <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
         </div>
@@ -222,7 +222,7 @@ export const ResourceAdminPage: React.FC = () => {
               const cat = categories.find(c => c.value === r.category);
               return (
                 <div key={r.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop}
-                  className="military-card p-5 flex items-center gap-4 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-4 transition-all duration-300"
                   style={{ cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: isOver ? 'translateY(8px)' : 'none', boxShadow: isOver ? '0 -4px 0 0 var(--ab3-gold)' : 'none', borderLeft: `4px solid ${cat?.color || '#6b7280'}` }}>
                   <div className="flex-shrink-0">{dragIcon}</div>
                   <span className="text-3xl flex-shrink-0">{r.icon || '🌐'}</span>

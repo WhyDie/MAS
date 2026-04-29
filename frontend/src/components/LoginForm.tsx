@@ -49,32 +49,31 @@ export const LoginForm: React.FC = () => {
         {/* Logo & Header */}
         <div className="text-center mb-10">
           <div
-            className="inline-flex items-center justify-center w-24 h-24 rounded-3xl mb-8 animate-float"
-            style={{ background: 'var(--gradient-gold)', boxShadow: '0 8px 50px rgba(201, 162, 39, 0.3)' }}
+            className="inline-flex items-center justify-center w-24 h-24 rounded-none mb-8 border-2 border-[var(--ab3-gold)] bg-black"
           >
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="#080808"/>
+              <path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" fill="var(--ab3-gold)"/>
             </svg>
           </div>
-          <h1 className="text-5xl font-heading font-black text-gradient-gold mb-4 animate-glow-pulse" style={{ letterSpacing: '3px', lineHeight: '1.1' }}>
+          <h1 className="text-5xl font-heading font-black uppercase tracking-widest text-white mb-4" style={{ lineHeight: '1.1' }}>
             СИСТЕМА АДАПТАЦІЇ
           </h1>
-          <p className="text-base" style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-            Збройні Сили України
+          <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--ab3-gold)' }}>
+            // ЗБРОЙНІ СИЛИ УКРАЇНИ //
           </p>
         </div>
 
         {/* Login Card */}
         <div
-          className="p-8 rounded-3xl animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-subtle)', animationDelay: '0.2s', animationFillMode: 'both' }}
+          className="p-8 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+          style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
         >
-          <h2 className="text-2xl font-heading font-bold mb-8 text-center" style={{ color: 'var(--text-primary)', fontSize: '24px', lineHeight: '1.3' }}>
-            Вхід до системи
+          <h2 className="text-2xl font-heading font-black uppercase tracking-widest mb-8 text-center" style={{ color: 'var(--text-primary)', fontSize: '24px', lineHeight: '1.3' }}>
+            ВХІД ДО СИСТЕМИ
           </h2>
 
           {error && (
-            <div className="mb-6 p-4 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+            <div className="mb-6 p-4 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
               <div className="flex items-center gap-3">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
                 <span style={{ fontSize: '14px', lineHeight: '1.5' }}>{error}</span>
@@ -116,7 +115,7 @@ export const LoginForm: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed py-4 text-base"
+              className="btn btn-primary rounded-none uppercase tracking-widest font-bold w-full disabled:opacity-50 disabled:cursor-not-allowed py-4 text-base"
             >
               {isLoading ? (
                 <>

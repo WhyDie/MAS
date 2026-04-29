@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '@services/api';
 
 interface EquipmentItem {
   id: string;
@@ -11,12 +12,7 @@ interface EquipmentItem {
 }
 
 export const EquipmentPage: React.FC = () => {
-  const [equipment, setEquipment] = useState<EquipmentItem[]>([
-    { id: '1', name: 'Бронежилет', category: 'Броня', weight: 6.5, type: 'issued', isActive: true },
-    { id: '2', name: 'Шолом FAST MICH', category: 'Головний убір', weight: 1.2, type: 'issued', isActive: true },
-    { id: '3', name: 'Термобілизна', category: 'Одяг', weight: 0.5, type: 'personal', cost: 45, isActive: true },
-    { id: '4', name: 'Тактичні рукавички', category: 'Аксесуари', weight: 0.1, type: 'personal', cost: 25, isActive: true },
-  ]);
+  const [equipment, setEquipment] = useState<EquipmentItem[]>([]);
 
   const [newEquipment, setNewEquipment] = useState({
     name: '', category: '', weight: '', type: 'personal' as 'issued' | 'personal' | 'recommended', cost: '',
@@ -24,18 +20,45 @@ export const EquipmentPage: React.FC = () => {
 
   const totalWeight = equipment.reduce((sum, item) => sum + (item.weight || 0), 0);
 
-  const addEquipment = () => {
-    if (newEquipment.name && newEquipment.category) {
-      setEquipment([...equipment, {
-        id: String(Date.now()), ...newEquipment,
-        weight: parseFloat(newEquipment.weight) || 0,
-        cost: parseFloat(newEquipment.cost) || 0, isActive: true,
-      }]);
-      setNewEquipment({ name: '', category: '', weight: '', type: 'personal', cost: '' });
+  useEffect(() => {
+    loadEquipment();
+  }, []);
+
+  const loadEquipment = async () => {
+    try {
+      const res = await api.get('/equipment');
+      setEquipment(res.data.data || res.data || []);
+    } catch (err) {
+      console.error('Failed to load equipment:', err);
     }
   };
 
-  const removeEquipment = (id: string) => setEquipment(equipment.filter((item) => item.id !== id));
+  const addEquipment = async () => {
+    if (newEquipment.name && newEquipment.category) {
+      try {
+        const payload = {
+          ...newEquipment,
+          weight: parseFloat(newEquipment.weight) || 0,
+          cost: parseFloat(newEquipment.cost) || 0,
+          isActive: true,
+        };
+        await api.post('/equipment', payload);
+        setNewEquipment({ name: '', category: '', weight: '', type: 'personal', cost: '' });
+        loadEquipment();
+      } catch (err) {
+        console.error('Failed to add equipment:', err);
+      }
+    }
+  };
+
+  const removeEquipment = async (id: string) => {
+    try {
+      await api.delete(`/equipment/${id}`);
+      loadEquipment();
+    } catch (err) {
+      console.error('Failed to remove equipment:', err);
+    }
+  };
 
   const categories = ['Броня', 'Головний убір', 'Одяг', 'Зброя', 'Аксесуари', 'Рюкзак', 'Медикаменти', 'Електроніка'];
 
@@ -69,8 +92,8 @@ export const EquipmentPage: React.FC = () => {
         ].map((stat, i) => (
           <div
             key={i}
-            className="glass-card p-6 animate-scale-in"
-            style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both' }}
+            className="p-6 rounded-none animate-scale-in bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:-translate-y-1 hover:border-[var(--ab3-gold)]"
+            style={{ animationDelay: `${i * 0.1}s`, animationFillMode: 'both', borderLeft: `3px solid ${stat.color}` }}
           >
             <div className="flex items-center gap-4">
               <span className="text-4xl">{stat.icon}</span>
@@ -86,10 +109,10 @@ export const EquipmentPage: React.FC = () => {
 
       {/* Add Equipment Form */}
       <div
-        className="p-6 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.3s', animationFillMode: 'both' }}
+        className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+        style={{ animationDelay: '0.3s', animationFillMode: 'both' }}
       >
-        <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
           ➕ Додати предмет
         </h2>
 
@@ -146,11 +169,11 @@ export const EquipmentPage: React.FC = () => {
 
       {/* Equipment Table */}
       <div
-        className="rounded-2xl overflow-hidden animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
+        className="rounded-none overflow-hidden animate-fade-in-up bg-[#050505] border border-[#333]"
+        style={{ animationDelay: '0.35s', animationFillMode: 'both' }}
       >
-        <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
+        <div className="p-6 border-b border-[#333]">
+          <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
             📋 Список екіпірування
           </h2>
         </div>
@@ -190,10 +213,10 @@ export const EquipmentPage: React.FC = () => {
 
       {/* Recommendations */}
       <div
-        className="p-6 rounded-2xl mt-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', borderLeft: '4px solid #22c55e', animationDelay: '0.4s', animationFillMode: 'both' }}
+        className="p-6 rounded-none mt-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333] border-l-4 border-[#22c55e]"
+        style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
       >
-        <h3 className="text-xl font-heading font-bold mb-4" style={{ color: '#22c55e', fontSize: '20px' }}>
+        <h3 className="text-xl font-heading font-black uppercase tracking-widest mb-4" style={{ color: '#22c55e', fontSize: '20px' }}>
           💡 Рекомендації
         </h3>
         <ul className="space-y-3">

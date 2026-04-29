@@ -94,7 +94,7 @@ export const InviteCodesPage: React.FC = () => {
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
             <span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span>
@@ -103,7 +103,7 @@ export const InviteCodesPage: React.FC = () => {
       )}
 
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">✅</span>
             <span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span>
@@ -114,10 +114,10 @@ export const InviteCodesPage: React.FC = () => {
       {/* Create New Code Form */}
       {canCreateCodes && (
         <div
-          className="p-6 rounded-2xl mb-8 animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
+          className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+          style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
         >
-          <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
+          <h2 className="text-xl font-heading font-black uppercase tracking-widest mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
             ➕ Створити новий код
           </h2>
 
@@ -139,7 +139,7 @@ export const InviteCodesPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl" style={{ background: 'rgba(201, 162, 39, 0.08)', border: '1px dashed rgba(201, 162, 39, 0.3)' }}>
+          <div className="p-4 rounded-none" style={{ background: 'rgba(201, 162, 39, 0.08)', border: '1px dashed rgba(201, 162, 39, 0.3)' }}>
             <p className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
               <strong style={{ color: 'var(--ab3-gold)' }}>Інформація:</strong> Код буде згенеровано автоматично.
               {user?.role === 'commander' && ' Як командир, ви можете створювати коди для рекрутів та менторів.'}
@@ -152,17 +152,17 @@ export const InviteCodesPage: React.FC = () => {
 
       {/* Codes List */}
       <div
-        className="rounded-2xl overflow-hidden animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.15s', animationFillMode: 'both' }}
+        className="rounded-none overflow-hidden animate-fade-in-up bg-[#050505] border border-[#333]"
+        style={{ animationDelay: '0.15s', animationFillMode: 'both' }}
       >
         <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-          <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
+          <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
             📋 Існуючі коди
           </h2>
         </div>
 
         {loading ? (
-          <div className="p-16 text-center">
+          <div className="p-16 text-center bg-[#0a0a0a]">
             <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
               <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/>
@@ -170,7 +170,7 @@ export const InviteCodesPage: React.FC = () => {
             <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Завантаження кодів...</p>
           </div>
         ) : codes.length === 0 ? (
-          <div className="p-16 text-center">
+          <div className="p-16 text-center bg-[#0a0a0a]">
             <div className="text-6xl mb-4">🔑</div>
             <h3 className="text-lg font-heading font-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '18px' }}>Кодів ще не створено</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Створіть перший код доступу вище</p>
@@ -191,7 +191,7 @@ export const InviteCodesPage: React.FC = () => {
                   return (
                     <tr key={code.id} style={{ transition: 'background 0.25s ease' }}>
                       <td style={{ padding: '14px 18px' }}>
-                        <code className="px-3 py-1.5 rounded-lg font-mono" style={{ background: 'var(--bg-glass)', color: 'var(--ab3-gold)', border: '1px solid rgba(201, 162, 39, 0.2)', fontSize: '13px' }}>
+                        <code className="px-3 py-1.5 rounded-none font-mono" style={{ background: '#111', color: 'var(--ab3-gold)', border: '1px solid #333', fontSize: '13px' }}>
                           {code.code}
                         </code>
                       </td>
