@@ -84,7 +84,7 @@ export const RegisterPage: React.FC = () => {
 
         {/* Register Card */}
         <div
-          className="p-8 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+          className="p-6 sm:p-8 rounded-none animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
         >
           {error && (
             <div className="mb-6 p-4 rounded-none border" style={{ background: 'rgba(220, 38, 38, 0.1)', borderColor: 'rgba(220, 38, 38, 0.3)', color: '#f87171' }}>
@@ -96,7 +96,7 @@ export const RegisterPage: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Імʼя</label>
                 <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="input" placeholder="Іван" required />

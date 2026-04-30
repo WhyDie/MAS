@@ -34,10 +34,10 @@ export const FAQPage: React.FC = () => {
   });
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up overflow-x-hidden">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+      <div className="mb-8 text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', lineHeight: '1.2' }}>
           ЧАСТІ ЗАПИТАННЯ (FAQ)
         </h1>
         <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
@@ -95,16 +95,16 @@ export const FAQPage: React.FC = () => {
               >
                 <button 
                   onClick={() => setExpandedId(isExpanded ? null : faq.id)}
-                  className="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-[#111] transition-colors"
+                  className="w-full text-left p-4 sm:p-5 flex justify-between items-center gap-4 hover:bg-[#111] transition-colors"
                 >
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-1 bg-[#111] border border-[#333] text-[var(--ab3-gold)] mb-2 inline-block">{faq.category}</span>
-                    <h3 className="text-md font-heading font-bold text-white pr-4">{faq.q}</h3>
+                    <h3 className="text-md font-heading font-bold text-white">{faq.q}</h3>
                   </div>
                   <span className="text-2xl text-[var(--ab3-gold)] transition-transform duration-300" style={{ transform: isExpanded ? 'rotate(45deg)' : 'rotate(0deg)' }}>+</span>
                 </button>
                 
-                <div className={`transition-all duration-300 px-5 ${isExpanded ? 'max-h-96 pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`transition-all duration-300 px-4 sm:px-5 ${isExpanded ? 'max-h-96 pb-4 sm:pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>
                   <p className="text-sm leading-relaxed text-gray-300 pt-3 border-t border-[#222]">💡 {faq.a}</p>
                 </div>
               </div>

@@ -144,13 +144,13 @@ export const ResourceAdminPage: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up overflow-x-hidden">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>
+      <div className="mb-8 text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)' }}>
           🌐 Управління ресурсами
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
           Додавання, редагування, видалення та сортування військових ресурсів
         </p>
       </div>
@@ -168,14 +168,14 @@ export const ResourceAdminPage: React.FC = () => {
       )}
 
       {/* Add Button */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>🌐 Військові ресурси</h2>
-        <button onClick={() => openForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати ресурс</button>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>🌐 Військові ресурси</h2>
+        <button onClick={() => openForm()} className="btn btn-primary w-full sm:w-auto" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати ресурс</button>
       </div>
 
       {/* Form */}
       {showForm && (
-        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
+        <div className="p-4 sm:p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingResource ? '✏️ Редагування ресурсу' : '➕ Новий ресурс'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -221,12 +221,12 @@ export const ResourceAdminPage: React.FC = () => {
               const r = item as MilitaryResource;
               const cat = categories.find(c => c.value === r.category);
               return (
-                <div key={r.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop}
-                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-4 transition-all duration-300"
+                <div key={r.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop} 
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all duration-300"
                   style={{ cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: isOver ? 'translateY(8px)' : 'none', boxShadow: isOver ? '0 -4px 0 0 var(--ab3-gold)' : 'none', borderLeft: `4px solid ${cat?.color || '#6b7280'}` }}>
                   <div className="flex-shrink-0">{dragIcon}</div>
-                  <span className="text-3xl flex-shrink-0">{r.icon || '🌐'}</span>
-                  <div className="flex-1 min-w-0">
+                  <span className="text-2xl sm:text-3xl flex-shrink-0">{r.icon || '🌐'}</span>
+                  <div className="flex-1 min-w-0 w-full">
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>{r.name}</h3>
                       {cat && <span className="badge" style={{ background: `${cat.color}20`, color: cat.color, border: `1px solid ${cat.color}40`, fontSize: '10px' }}>{cat.icon} {cat.label}</span>}
@@ -234,7 +234,7 @@ export const ResourceAdminPage: React.FC = () => {
                     <p className="text-xs truncate" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{r.url}</p>
                     {r.description && <p className="text-xs truncate mt-1" style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{r.description}</p>}
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">
                     <button onClick={() => openForm(r)} className="btn" style={{ background: 'var(--ab3-gold-glow)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--ab3-gold)', padding: '6px 12px', fontSize: '11px' }}>✏️</button>
                     <button onClick={() => deleteResource(r.id)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 12px', fontSize: '11px' }}>🗑</button>
                   </div>

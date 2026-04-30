@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom'; // Додаємо useSearchParams
 import { api } from '@services/api';
 import { useAuthStore } from '@stores/index';
 
@@ -36,7 +36,9 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 
 export const SchedulePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams(); // Ініціалізуємо useSearchParams
   const { user } = useAuthStore();
+  
   const [apiEvents, setApiEvents] = useState<ApiEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -60,6 +62,21 @@ export const SchedulePage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Обробка параметрів URL для підсвічування події
+  useEffect(() => {
+    const eventId = searchParams.get('eventId');
+    const highlightDate = searchParams.get('highlightDate');
+
+    if (eventId && highlightDate) {
+      setSelectedDate(new Date(highlightDate)); // Встановлюємо дату події
+      // Уявіть, що тут ви маєте спосіб зберегти eventId для підсвічування
+      // setHighlightedEventId(eventId); // Наприклад, новий стан
+      
+      // TODO: Позначити сповіщення як прочитане через сервіс сповіщень
+      // notificationService.markAsRead(notificationId);
+    }
+  }, [searchParams]);
 
   const filterEventsByDate = (date: Date): ApiEvent[] => {
     const dateStr = date.toISOString().split('T')[0];
@@ -88,14 +105,13 @@ export const SchedulePage: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
         <div className="flex justify-between items-center flex-wrap gap-4 border-b border-[#333] pb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-2 h-10 bg-[var(--ab3-gold)]" />
+          <div className="flex-1 min-w-0">
             <div>
-              <h1 className="text-3xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>
+              <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
                 РОЗПОРЯДОК <span className="text-white/30 font-light">/ ДНЯ</span>
               </h1>
               <p className="font-mono text-xs uppercase tracking-widest mt-1" style={{ color: 'var(--text-muted)' }}>
@@ -104,7 +120,7 @@ export const SchedulePage: React.FC = () => {
             </div>
           </div>
           {(user?.role === 'commander' || user?.role === 'admin' || user?.role === 'superadmin') && (
-            <button onClick={() => navigate('/schedule-admin')} className="btn btn-primary rounded-none uppercase tracking-widest font-bold" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління розпорядком</button>
+            <button onClick={() => navigate('/schedule-admin')} className="btn btn-primary rounded-none uppercase tracking-widest font-bold w-full sm:w-auto" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління розпорядком</button>
           )}
         </div>
       </div>
@@ -114,10 +130,10 @@ export const SchedulePage: React.FC = () => {
         className="p-4 mb-6 animate-fade-in-up bg-[#0a0a0a] border border-[#222]"
         style={{ animationDelay: '0.1s', animationFillMode: 'both', borderRadius: '2px' }}
       >
-        <div className="flex gap-2 items-center flex-wrap">
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
           <button
             onClick={() => setSelectedDate(new Date(selectedDate.getTime() - 86400000))}
-            className="btn font-mono uppercase text-xs tracking-wider hover:text-white"
+            className="btn font-mono uppercase text-xs tracking-wider hover:text-white w-full sm:w-auto"
             style={{ background: '#111', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 18px' }}
           >
             ← Назад
@@ -127,13 +143,13 @@ export const SchedulePage: React.FC = () => {
             type="date"
             value={selectedDate.toISOString().split('T')[0]}
             onChange={(e) => setSelectedDate(new Date(e.target.value))}
-            className="input"
-            style={{ maxWidth: '200px', padding: '8px 14px', borderRadius: '2px', border: '1px solid #333', background: '#111', color: 'white', fontFamily: 'monospace' }}
+            className="input w-full"
+            style={{ flexGrow: 1, padding: '8px 14px', borderRadius: '2px', border: '1px solid #333', background: '#111', color: 'white', fontFamily: 'monospace' }}
           />
 
           <button
             onClick={() => setSelectedDate(new Date(selectedDate.getTime() + 86400000))}
-            className="btn font-mono uppercase text-xs tracking-wider hover:text-white"
+            className="btn font-mono uppercase text-xs tracking-wider hover:text-white w-full sm:w-auto"
             style={{ background: '#111', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 18px' }}
           >
             Вперед →
@@ -141,7 +157,7 @@ export const SchedulePage: React.FC = () => {
 
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="btn btn-primary ml-auto uppercase font-bold tracking-widest text-xs"
+            className="btn btn-primary sm:ml-auto uppercase font-bold tracking-widest text-xs w-full sm:w-auto"
             style={{ padding: '10px 18px', fontSize: '13px' }}
           >
             Сьогодні
@@ -155,36 +171,38 @@ export const SchedulePage: React.FC = () => {
         style={{ animationDelay: '0.15s', animationFillMode: 'both', borderRadius: '2px' }}
       >
         <h3 className="font-mono text-xs font-bold mb-4 uppercase tracking-widest" style={{ color: 'var(--ab3-gold)' }}>[ ТИЖНЕВИЙ ОГЛЯД ]</h3>
-        <div className="grid grid-cols-7 gap-2 text-center text-sm">
-          {Array.from({ length: 7 }).map((_, i) => {
-            const date = new Date(selectedDate.getTime() + (i - 3) * 86400000);
-            const dayEvents = filterEventsByDate(date);
-            const isToday = date.toDateString() === new Date().toDateString();
-            const isSelected = date.toDateString() === selectedDate.toDateString();
+        <div className="overflow-x-auto pb-2 -mb-2">
+          <div className="grid grid-cols-7 gap-2 text-center text-sm min-w-[480px]">
+            {Array.from({ length: 7 }).map((_, i) => {
+              const date = new Date(selectedDate.getTime() + (i - 3) * 86400000);
+              const dayEvents = filterEventsByDate(date);
+              const isToday = date.toDateString() === new Date().toDateString();
+              const isSelected = date.toDateString() === selectedDate.toDateString();
 
-            return (
-              <button
-                key={i}
-                onClick={() => setSelectedDate(date)}
-                className="p-3 rounded-none border transition-all duration-300 hover:scale-105"
-                style={{
-                  background: isSelected ? 'var(--gradient-gold)' : isToday ? 'var(--bg-glass-hover)' : 'transparent',
-                  borderColor: isToday ? 'var(--ab3-gold)' : 'var(--border-subtle)',
-                  color: isSelected ? 'var(--ab3-black)' : 'var(--text-primary)',
-                }}
-              >
-                <div className="font-bold" style={{ fontSize: '16px' }}>{date.getDate()}</div>
-                <div className="text-xs mt-1" style={{ color: isSelected ? 'var(--ab3-black)' : 'var(--text-muted)' }}>
-                  {date.toLocaleDateString('uk-UA', { weekday: 'short' })}
-                </div>
-                {dayEvents.length > 0 && (
-                  <div className="text-xs mt-1 font-bold" style={{ color: isSelected ? 'var(--ab3-black)' : '#f59e0b' }}>
-                    {dayEvents.length}
+              return (
+                <button
+                  key={i}
+                  onClick={() => setSelectedDate(date)}
+                  className="p-3 rounded-none border transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: isSelected ? 'var(--gradient-gold)' : isToday ? 'var(--bg-glass-hover)' : 'transparent',
+                    borderColor: isToday ? 'var(--ab3-gold)' : 'var(--border-subtle)',
+                    color: isSelected ? 'var(--ab3-black)' : 'var(--text-primary)',
+                  }}
+                >
+                  <div className="font-bold" style={{ fontSize: '16px' }}>{date.getDate()}</div>
+                  <div className="text-xs mt-1" style={{ color: isSelected ? 'var(--ab3-black)' : 'var(--text-muted)' }}>
+                    {date.toLocaleDateString('uk-UA', { weekday: 'short' })}
                   </div>
-                )}
-              </button>
-            );
-          })}
+                  {dayEvents.length > 0 && (
+                    <div className="text-xs mt-1 font-bold" style={{ color: isSelected ? 'var(--ab3-black)' : '#f59e0b' }}>
+                      {dayEvents.length}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -221,12 +239,12 @@ export const SchedulePage: React.FC = () => {
               const typeCfg = eventTypeConfig[event.eventType] || eventTypeConfig.other;
               return (
                 <div
-                  key={event.id}
-                  className="p-6 transition-all duration-300"
+                  key={event.id} // Додаємо id до ключа
+                  className="p-4 sm:p-6 transition-all duration-300"
                   style={{ background: 'var(--bg-card)', borderLeft: `4px solid ${typeCfg.color}` }}
                 >
-                  <div className="flex items-start gap-5">
-                    <span className="text-4xl flex-shrink-0">{typeCfg.icon}</span>
+                  <div className="flex items-start gap-4">
+                    <span className="text-3xl sm:text-4xl flex-shrink-0">{typeCfg.icon}</span>
                     <div className="flex-1">
                       <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
                         <h3 className="text-lg font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>

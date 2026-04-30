@@ -327,13 +327,13 @@ export const UnitGuideAdminPage: React.FC = () => {
   );
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up overflow-x-hidden">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
+      <div className="mb-8 text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', lineHeight: '1.2' }}>
           ⚙️ Управління довідником
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
           Додавання, редагування, видалення та сортування перетягуванням
         </p>
       </div>
@@ -370,14 +370,14 @@ export const UnitGuideAdminPage: React.FC = () => {
       {/* ===== ROOMS ===== */}
       {activeTab === 'rooms' && (
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>🏢 ПРИМІЩЕННЯ</h2>
-            <button onClick={() => openRoomForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати</button>
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>🏢 ПРИМІЩЕННЯ</h2>
+            <button onClick={() => openRoomForm()} className="btn btn-primary w-full sm:w-auto" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати</button>
           </div>
 
           {/* Room Form */}
           {showRoomForm && (
-            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
+            <div className="p-4 sm:p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingRoom ? '✏️ Редагування' : '➕ Нове приміщення'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -436,7 +436,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                       onDragStart={h.onDragStart}
                       onDragOver={h.onDragOver}
                       onDrop={h.onDrop}
-                      className="military-card rounded-none p-4 flex items-center gap-4 group transition-all duration-300 bg-[#0a0a0a] border border-[#333]"
+                      className="military-card rounded-none p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 group transition-all duration-300 bg-[#0a0a0a] border border-[#333]"
                       style={{
                         borderLeft: `4px solid ${cat?.color || '#6b7280'}`,
                         cursor: 'grab',
@@ -447,11 +447,11 @@ export const UnitGuideAdminPage: React.FC = () => {
                     >
                       <div className="flex-shrink-0">{dragIcon}</div>
                       <span className="text-2xl flex-shrink-0">{(room as UnitRoom).icon || '🏢'}</span>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 w-full">
                         <h3 className="font-bold truncate" style={{ color: 'var(--text-primary)', fontSize: '15px' }}>{(room as UnitRoom).name}</h3>
                         {(room as UnitRoom).roomNumber && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>🚪 {(room as UnitRoom).roomNumber} | Поверх: {((room as UnitRoom).floor || 0) + 1}</p>}
                       </div>
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">
                         <button onClick={() => openRoomForm(room as UnitRoom)} className="btn" style={{ background: 'var(--ab3-gold-glow)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--ab3-gold)', padding: '6px 12px', fontSize: '11px' }}>✏️</button>
                         <button onClick={() => deleteRoom((room as UnitRoom).id)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 12px', fontSize: '11px' }}>🗑</button>
                       </div>
@@ -467,13 +467,13 @@ export const UnitGuideAdminPage: React.FC = () => {
       {/* ===== STAFF ===== */}
       {activeTab === 'staff' && (
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>👥 ПЕРСОНАЛ</h2>
-            <button onClick={() => openStaffForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати</button>
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>👥 ПЕРСОНАЛ</h2>
+            <button onClick={() => openStaffForm()} className="btn btn-primary w-full sm:w-auto" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати</button>
           </div>
 
           {showStaffForm && (
-            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
+            <div className="p-4 sm:p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingStaff ? '✏️ Редагування' : '➕ Новий співробітник'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Звання *</label><input className="input" value={staffForm.rank} onChange={e => setStaffForm({ ...staffForm, rank: e.target.value })} placeholder="Полковник" /></div>
@@ -501,7 +501,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                   onDragStart={h.onDragStart}
                   onDragOver={h.onDragOver}
                   onDrop={h.onDrop}
-                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-4 flex items-center gap-4 group transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 group transition-all duration-300"
                   style={{
                     cursor: 'grab',
                     opacity: isDragging ? 0.4 : 1,
@@ -511,14 +511,14 @@ export const UnitGuideAdminPage: React.FC = () => {
                 >
                   <div className="flex-shrink-0">{dragIcon}</div>
                   <span className="text-2xl flex-shrink-0">{(person as UnitStaff).icon || '👤'}</span>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 w-full">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="badge badge-gold" style={{ fontSize: '10px' }}>{(person as UnitStaff).rank}</span>
                       <h3 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: '15px' }}>{(person as UnitStaff).fullName}</h3>
                     </div>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{(person as UnitStaff).position} {((person as UnitStaff).room && ((person as UnitStaff).room !== '—')) ? `| Каб. ${(person as UnitStaff).room}` : ''}</p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">
                     <button onClick={() => openStaffForm(person as UnitStaff)} className="btn" style={{ background: 'var(--ab3-gold-glow)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--ab3-gold)', padding: '6px 12px', fontSize: '11px' }}>✏️</button>
                     <button onClick={() => deleteStaff((person as UnitStaff).id)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 12px', fontSize: '11px' }}>🗑</button>
                   </div>
@@ -532,13 +532,13 @@ export const UnitGuideAdminPage: React.FC = () => {
       {/* ===== STEPS ===== */}
       {activeTab === 'steps' && (
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📝 КРОКИ ПРИБУТТЯ</h2>
-            <button onClick={() => openStepForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати крок</button>
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>📝 КРОКИ ПРИБУТТЯ</h2>
+            <button onClick={() => openStepForm()} className="btn btn-primary w-full sm:w-auto" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати крок</button>
           </div>
 
           {showStepForm && (
-            <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
+            <div className="p-4 sm:p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingStep ? '✏️ Редагування кроку' : '➕ Новий крок'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={stepForm.title} onChange={e => setStepForm({ ...stepForm, title: e.target.value })} placeholder="Реєстрація" /></div>
@@ -569,7 +569,7 @@ export const UnitGuideAdminPage: React.FC = () => {
                   onDragStart={h.onDragStart}
                   onDragOver={h.onDragOver}
                   onDrop={h.onDrop}
-                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-5 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex flex-col sm:flex-row items-start sm:items-center gap-5 transition-all duration-300"
                   style={{
                     cursor: 'grab',
                     opacity: isDragging ? 0.4 : 1,
@@ -581,14 +581,14 @@ export const UnitGuideAdminPage: React.FC = () => {
                   <div className="w-12 h-12 rounded-none border border-[var(--ab3-gold)] bg-black flex items-center justify-center flex-shrink-0 font-heading font-black text-lg" style={{ color: 'var(--ab3-gold)' }}>
                     {index + 1}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 w-full">
                     <div className="flex items-center gap-3 mb-1">
                       <span className="text-xl">{(step as ArrivalStep).icon || '📝'}</span>
                       <h3 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>{(step as ArrivalStep).title}</h3>
                     </div>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>{(step as ArrivalStep).description}</p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">
                     <button onClick={() => openStepForm(step as ArrivalStep)} className="btn" style={{ background: 'var(--ab3-gold-glow)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--ab3-gold)', padding: '6px 12px', fontSize: '11px' }}>✏️</button>
                     <button onClick={() => deleteStep((step as ArrivalStep).id)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 12px', fontSize: '11px' }}>🗑</button>
                   </div>

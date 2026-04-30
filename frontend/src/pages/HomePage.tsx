@@ -26,22 +26,22 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ icon, title, description, path,
   return (
     <button
       onClick={() => navigate(path)}
-      className="group p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-[var(--ab3-gold)] hover:bg-[#111]"
+      className="group p-4 sm:p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-[var(--ab3-gold)] hover:bg-[#111]"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both', borderRadius: '2px' }}
     >
-      {/* Tactical Targeting Brackets (Visible on Hover) */}
-      <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Mechanical Targeting Brackets (Snaps into place on hover) */}
+      <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[var(--ab3-gold)] opacity-0 -translate-x-2 -translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-200 ease-out" />
+      <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[var(--ab3-gold)] opacity-0 translate-x-2 -translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-200 ease-out" />
+      <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[var(--ab3-gold)] opacity-0 -translate-x-2 translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-200 ease-out" />
+      <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[var(--ab3-gold)] opacity-0 translate-x-2 translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-200 ease-out" />
       
       {/* Background Glow Pulse */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 50%, ${color}, transparent 70%)` }} />
 
-      <div className="flex items-start gap-5">
+      <div className="flex items-start gap-4">
         {/* Icon Container */}
         <div
-          className="w-14 h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333]"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333]"
           style={{ background: `${glowColor}`, color: color, boxShadow: `0 0 0 0 ${color}` }}
         >
           {icon}
@@ -76,19 +76,19 @@ const ModuleCard: React.FC<ModuleCardProps> = ({ icon, title, description, path,
 
 const StatCard: React.FC<{ label: string; value: string | number; icon: React.ReactNode; color: string; delay?: number }> = ({ label, value, icon, color, delay = 0 }) => (
   <div
-    className="p-5 animate-scale-in transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#222] relative overflow-hidden group"
+    className="p-4 animate-scale-in transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#222] relative overflow-hidden group"
     style={{ animationDelay: `${delay}ms`, animationFillMode: 'both', borderLeft: `3px solid ${color}` }}
   >
     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#111] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
     <div className="flex items-center gap-4">
       <div
-        className="w-12 h-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 opacity-70"
+        className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 opacity-70"
         style={{ color: color }}
       >
         {icon}
       </div>
       <div className="relative z-10">
-        <p className="text-3xl font-mono font-bold tracking-tighter" style={{ color: 'var(--text-primary)', fontSize: '28px', lineHeight: '1.1' }}>{value}</p>
+        <p className="text-2xl sm:text-3xl font-mono font-bold tracking-tighter" style={{ color: 'var(--text-primary)', lineHeight: '1.1' }}>{value}</p>
         <p className="text-xs mt-1 uppercase font-bold tracking-widest" style={{ color: color, fontSize: '10px' }}>{label}</p>
       </div>
     </div>
@@ -211,7 +211,40 @@ export const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8 lg:space-y-10 pb-12">
+    <>
+    <style>{`
+      @keyframes radarSweep {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes blinkNode {
+        0%, 100% { opacity: 0.1; transform: scale(0.5); }
+        50% { opacity: 1; transform: scale(1.5); box-shadow: 0 0 8px var(--ab3-gold); }
+      }
+      .radar-sweep {
+        position: absolute;
+        top: -51.3%; left: -48.6%; width: 200%; height: 200%;
+        background: conic-gradient(from 0deg, transparent 75%, rgba(201, 162, 39, 0.25) 100%);
+        animation: radarSweep 6s infinite linear;
+        pointer-events: none;
+      }
+      .data-node {
+        position: absolute;
+        width: 3px; height: 3px;
+        background: var(--ab3-gold);
+        border-radius: 50%;
+        animation: blinkNode 3s infinite ease-in-out;
+      }
+      .glitch-hover:hover {
+        animation: brutalGlitch 0.3s infinite;
+      }
+      @keyframes brutalGlitch {
+        0% { text-shadow: 3px 0 red, -3px 0 cyan; transform: translate(-1px, 1px); }
+        50% { text-shadow: -3px 0 red, 3px 0 cyan; transform: translate(1px, -1px); }
+        100% { text-shadow: none; transform: translate(0); }
+      }
+    `}</style>
+    <div className="space-y-8 lg:space-y-10 pb-12 overflow-x-hidden">
       {/* Hero Section */}
       <div
         className="relative overflow-hidden animate-fade-in-up border border-[#333] bg-[#050505] rounded-none"
@@ -222,13 +255,32 @@ export const HomePage: React.FC = () => {
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[var(--ab3-gold)]/5 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black to-transparent pointer-events-none" />
         
+        {/* Active Radar Elements */}
+        <div className="absolute -top-64 -right-64 w-[800px] h-[800px] rounded-full border border-white/5 overflow-hidden pointer-events-none opacity-40">
+          <div className="radar-sweep" />
+        </div>
+        <div className="absolute -top-48 -right-48 w-[650px] h-[650px] border border-white/10 rounded-full border-dashed animate-[spin_40s_linear_infinite] pointer-events-none">
+          <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/10" />
+          <div className="absolute top-0 left-1/2 w-[1px] h-full bg-white/10" />
+        </div>
+        <div className="absolute -top-24 -right-24 w-96 h-96 border border-[var(--ab3-gold)]/20 rounded-full border-dotted animate-[spin_25s_linear_infinite_reverse] pointer-events-none" />
+        
+        {/* Data Nodes (Tracked targets) */}
+        <div className="data-node top-[25%] right-[35%]" style={{ animationDelay: '0s' }} />
+        <div className="data-node top-[55%] right-[18%]" style={{ animationDelay: '1.2s' }} />
+        <div className="data-node top-[80%] right-[45%]" style={{ animationDelay: '0.7s' }} />
+        <div className="data-node top-[40%] left-[25%]" style={{ animationDelay: '2.1s' }} />
+        <div className="data-node top-[70%] left-[12%]" style={{ animationDelay: '1.5s' }} />
+        <div className="data-node top-[20%] left-[45%]" style={{ animationDelay: '3.4s' }} />
+
         {/* Tactical UI Lines */}
         <div className="absolute top-4 left-4 w-8 h-[1px] bg-[var(--ab3-gold)] opacity-50" />
         <div className="absolute top-4 left-4 w-[1px] h-8 bg-[var(--ab3-gold)] opacity-50" />
 
         <div className="relative z-10 p-6 sm:p-8 lg:p-12">
           {/* Logo + Title */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 mb-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 mb-8 w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div
               className="w-16 h-16 flex items-center justify-center border border-[var(--ab3-gold)] bg-black"
             >
@@ -241,21 +293,22 @@ export const HomePage: React.FC = () => {
                 <div className="w-2 h-2 bg-red-600 animate-pulse" />
                 <span className="font-mono text-xs text-red-500 uppercase tracking-widest">Система активна</span>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-black text-white mb-2 uppercase tracking-tighter" style={{ lineHeight: '1.1' }}>
+              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-heading font-black text-white mb-2 uppercase tracking-tighter glitch-hover cursor-default transition-all duration-300" style={{ lineHeight: '1.1' }}>
                 АДАПТАЦІЯ <span style={{ color: 'var(--ab3-gold)' }}>БІЙЦЯ</span>
               </h1>
               <p className="font-mono text-sm uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
                 // Платформа підготовки та управління //
               </p>
             </div>
+            </div>
           </div>
 
           {/* Welcome Message */}
           <div
-            className="p-6 lg:p-8 mb-8 animate-fade-in-up border-l-2 border-[var(--ab3-gold)] bg-[#111]/80 backdrop-blur-sm"
+            className="p-4 sm:p-6 lg:p-8 mb-8 animate-fade-in-up border-l-2 border-[var(--ab3-gold)] bg-[#111]/80 backdrop-blur-sm"
             style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
           >
-            <h2 className="text-xl lg:text-2xl font-heading font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-heading font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-primary)' }}>
               Особовий склад: {user?.firstName || 'Військовослужбовець'}
             </h2>
             <p className="font-mono text-sm" style={{ color: 'var(--text-secondary)', lineHeight: '1.7' }}>
@@ -325,12 +378,12 @@ export const HomePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
-              className="group p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-blue-500 hover:bg-[#111]"
+              className="group p-4 sm:p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-blue-500 hover:bg-[#111]"
               style={{ animationDelay: '500ms', animationFillMode: 'both', borderRadius: '2px' }}
               onClick={() => navigate('/commander-dashboard')}
             >
               <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-4">
                 <div
                   className="w-14 h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333] bg-[#1a1a1a]"
                   style={{ color: '#3b82f6' }}
@@ -352,12 +405,12 @@ export const HomePage: React.FC = () => {
             </div>
 
             <div
-              className="group p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-[var(--ab3-gold)] hover:bg-[#111]"
+              className="group p-4 sm:p-6 text-left w-full cursor-pointer animate-fade-in-up transition-all duration-300 relative overflow-hidden bg-[#0a0a0a] border border-[#222] hover:border-[var(--ab3-gold)] hover:bg-[#111]"
               style={{ animationDelay: '550ms', animationFillMode: 'both', borderRadius: '2px' }}
               onClick={() => navigate('/invite-codes')}
             >
               <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--ab3-gold)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-4">
                 <div
                   className="w-14 h-14 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 flex-shrink-0 border border-[#333] bg-[#1a1a1a]"
                   style={{ color: 'var(--ab3-gold)' }}
@@ -381,5 +434,6 @@ export const HomePage: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };

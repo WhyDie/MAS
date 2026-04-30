@@ -1,6 +1,7 @@
 import React, { ReactNode, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@stores/index';
+import { NotificationBell } from './NotificationBell';
 
 interface LayoutProps {
   children: ReactNode;
@@ -154,7 +155,6 @@ const MODULE_MENU: MenuItem[] = [
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuthStore();
-  // const { panicButtonActive, activatePanicButton } = useUIStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -162,6 +162,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [hoverTimeout, setHoverTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -169,7 +170,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const executeLogout = () => {
+    setShowLogoutModal(false);
     logout();
     navigate('/login');
   };
@@ -258,25 +264,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Right: User Info + Actions */}
           <div className="flex items-center gap-3">
 
-            {/* SOS Button */}
-            {/* <button
-              onClick={activatePanicButton}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-none border font-mono text-xs uppercase tracking-widest font-bold transition-all duration-300 hover:-translate-y-0.5 active:scale-95 ${panicButtonActive ? 'animate-pulse-glow' : ''}`}
-              style={{
-                background: panicButtonActive ? 'var(--ab3-red-glow)' : '#0a0a0a',
-                border: `1px solid ${panicButtonActive ? '#ef4444' : '#333'}`,
-                color: '#f87171',
-              }}
-              onMouseEnter={(e) => { if (!panicButtonActive) e.currentTarget.style.borderColor = '#ef4444'; }}
-              onMouseLeave={(e) => { if (!panicButtonActive) e.currentTarget.style.borderColor = '#333'; }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
-              <span className="hidden lg:inline">SOS</span>
-            </button> */}
+            <NotificationBell />
 
             {/* Logout Button */}
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               className="flex items-center gap-2 px-4 py-2.5 rounded-none border font-mono text-xs uppercase tracking-widest font-bold transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
               style={{
                 background: '#0a0a0a',
@@ -482,6 +474,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+            <h3 className="text-xl font-heading font-black text-white uppercase tracking-widest mb-3">Вихід із системи</h3>
+            <p className="text-sm text-gray-400 mb-6 leading-relaxed">Чи точно ви бажаєте завершити поточний сеанс та вийти з акаунту?</p>
+            <div className="flex gap-3">
+              <button onClick={executeLogout} className="btn btn-primary flex-1 py-3 text-sm">🚪 Вийти</button>
+              <button onClick={() => setShowLogoutModal(false)} className="btn flex-1 py-3 text-sm" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)' }}>Скасувати</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

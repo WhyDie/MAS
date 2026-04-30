@@ -3,10 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/config';
-import { initializeDatabase } from './config/database';
+import { initializeDatabase, AppDataSource } from './config/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import userRoutes from './routes/userRoutes';
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 
@@ -101,7 +100,7 @@ export async function startServer(): Promise<void> {
     await initializeDatabase();
 
     // THEN import and setup routes
-    const authRoutes = (await import('./routes/auth')).default;
+    const authRoutes = (await import('./routes/authRoutes')).default;
     const trainingRoutes = (await import('./routes/training')).default;
     const trainingSimulatorRoutes = (await import('./routes/training-simulator')).default;
     const syncRoutes = (await import('./routes/sync')).default;
@@ -114,54 +113,41 @@ export async function startServer(): Promise<void> {
     const unitGuideRoutes = (await import('./routes/unit-guide')).default;
     const aiRoutes = (await import('./routes/ai')).default;
 
-    // --- PATCH: Гарантована робота дашбордів Ментора та Психолога ---
-
-    // Інтерцептор: додаємо позивний (callsign) до всіх відповідей з даними користувача
-    app.use((req, res, next) => {
-      const originalJson = res.json;
-      res.json = function (body) {
-        if (body && body.data) {
-          const userObj = body.data.user || (body.data.email ? body.data : null);
-          if (userObj && userObj.id) {
-            try {
-              const db = new Database(getDbPath(), { timeout: 1000 });
-
-                // Примусово підтягуємо найсвіжіші дані з правильної БД (ігноруємо кеш TypeORM)
-                try {
-                  const realUser = db.prepare('SELECT "firstName", "lastName", "profilePictureUrl", "rank", "position", "civilProfession" FROM "users" WHERE "id" = ?').get(userObj.id) as any;
-                  if (realUser) {
-                    if (realUser.firstName) userObj.firstName = realUser.firstName;
-                    if (realUser.lastName) userObj.lastName = realUser.lastName;
-                    if (realUser.profilePictureUrl) userObj.profilePictureUrl = realUser.profilePictureUrl;
-                    if (realUser.rank) userObj.rank = realUser.rank;
-                    if (realUser.position) userObj.position = realUser.position;
-                    if (realUser.civilProfession) userObj.civilProfession = realUser.civilProfession;
-                  }
-                } catch (e) {}
-
-              db.prepare('CREATE TABLE IF NOT EXISTS "user_ext" ("userId" varchar PRIMARY KEY, "callsign" varchar)').run();
-              const ext = db.prepare('SELECT callsign FROM "user_ext" WHERE "userId" = ?').get(userObj.id) as any;
-              if (ext && ext.callsign) userObj.callsign = ext.callsign;
-              db.close();
-            } catch (e) {}
-          }
-        }
-        return originalJson.call(this, body);
-      };
-      next();
-    });
+    // --- 2FA Schema Setup ---
+    try {
+      // Переносимо всі поля безпеки в таблицю user_ext, яку TypeORM не контролює і не видаляє при рестарті
+      await AppDataSource.query(`
+        CREATE TABLE IF NOT EXISTS "user_ext" (
+          "userId" varchar PRIMARY KEY,
+          "callsign" varchar,
+          "twoFactorSecret" varchar,
+          "emailFor2FA" varchar,
+          "emailCode2FA" varchar,
+          "webAuthnCredentialId" varchar,
+          "isAuthenticatorEnabled" boolean DEFAULT 0,
+          "isEmailCodeEnabled" boolean DEFAULT 0,
+          "isBiometricsEnabled" boolean DEFAULT 0
+        )
+      `);
+      
+      const cols = ['twoFactorSecret', 'emailFor2FA', 'emailCode2FA', 'webAuthnCredentialId'];
+      const bools = ['isAuthenticatorEnabled', 'isEmailCodeEnabled', 'isBiometricsEnabled'];
+      
+      for (const col of cols) {
+        try { await AppDataSource.query(`ALTER TABLE "user_ext" ADD COLUMN "${col}" varchar`); } catch(e) {}
+      }
+      for (const col of bools) {
+        try { await AppDataSource.query(`ALTER TABLE "user_ext" ADD COLUMN "${col}" boolean DEFAULT 0`); } catch(e) {}
+      }
+    } catch(e) { console.error('2FA schema error', e) }
 
     // 1. Перехоплюємо створення запиту, щоб примусово записати mentorId в БД
-    app.use('/api/mentorship/requests', (req, res, next) => {
+    app.use('/api/mentorship/requests', async (req, res, next) => {
       if (req.method === 'POST' && req.body.mentorId) {
         const originalJson = res.json;
         res.json = function (body) {
           if (body && body.data && body.data.id) {
-            try {
-              const db = new Database(getDbPath(), { fileMustExist: true, timeout: 5000 });
-              db.prepare('UPDATE "mentorship_requests" SET "mentorId" = ? WHERE "id" = ?').run(req.body.mentorId, body.data.id);
-              db.close();
-            } catch (e) { console.error('Patch error:', e); }
+            AppDataSource.query('UPDATE "mentorship_requests" SET "mentorId" = ? WHERE "id" = ?', [req.body.mentorId, body.data.id]).catch(e => console.error('Patch error:', e));
           }
           return originalJson.call(this, body);
         };
@@ -170,99 +156,44 @@ export async function startServer(): Promise<void> {
     });
 
     // 2. Ендпоінт для отримання ВСІХ запитів менторства (напряму з БД)
-    app.get('/api/mentorship/all-requests', (req, res) => {
+    app.get('/api/mentorship/all-requests', async (req, res) => {
       try {
-        const db = new Database(getDbPath(), { fileMustExist: true, timeout: 5000 });
-        const rows = db.prepare(`SELECT m.*, u."firstName", u."lastName", u."rank" FROM "mentorship_requests" m LEFT JOIN "users" u ON m."recruitId" = u."id" ORDER BY m."createdAt" DESC`).all();
-        db.close();
+        const rows = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."rank" FROM "mentorship_requests" m LEFT JOIN "users" u ON m."recruitId" = u."id" ORDER BY m."createdAt" DESC`);
         res.json({ success: true, data: rows.map((r: any) => ({ ...r, recruit: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })) });
       } catch (e) { res.status(500).json({ success: false }); }
     });
 
     // 3. Ендпоінт для отримання ВСІХ запитів психологом (напряму з БД)
-    app.get('/api/psychological-support/all-requests', (req, res) => {
+    app.get('/api/psychological-support/all-requests', async (req, res) => {
       try {
-        const db = new Database(getDbPath(), { fileMustExist: true, timeout: 5000 });
-        const rows = db.prepare(`SELECT p.*, u."firstName", u."lastName", u."rank" FROM "psychological_support" p LEFT JOIN "users" u ON p."userId" = u."id" ORDER BY p."createdAt" DESC`).all();
-        db.close();
+        const rows = await AppDataSource.query(`SELECT p.*, u."firstName", u."lastName", u."rank" FROM "psychological_support" p LEFT JOIN "users" u ON p."userId" = u."id" ORDER BY p."createdAt" DESC`);
         res.json({ success: true, data: rows.map((r: any) => ({ ...r, user: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })) });
       } catch (e) { res.status(500).json({ success: false }); }
     });
 
     // 3. Безвідмовні ендпоінти для зміни статусів
-    app.put('/api/psychological-support/requests/:id/status', express.json(), (req, res) => {
+    app.put('/api/psychological-support/requests/:id/status', express.json(), async (req, res) => {
       try {
-        const db = new Database(getDbPath(), { fileMustExist: true, timeout: 5000 });
         const { status, response } = req.body;
         if (response && status === 'resolved') {
-          db.prepare('UPDATE "psychological_support" SET "status" = ?, "response" = ?, "respondedAt" = datetime("now"), "updatedAt" = datetime("now") WHERE "id" = ?').run(status, response, req.params.id);
+          await AppDataSource.query('UPDATE "psychological_support" SET "status" = ?, "response" = ?, "respondedAt" = datetime("now"), "updatedAt" = datetime("now") WHERE "id" = ?', [status, response, req.params.id]);
         } else {
-          db.prepare('UPDATE "psychological_support" SET "status" = ?, "updatedAt" = datetime("now") WHERE "id" = ?').run(status, req.params.id);
+          await AppDataSource.query('UPDATE "psychological_support" SET "status" = ?, "updatedAt" = datetime("now") WHERE "id" = ?', [status, req.params.id]);
         }
-        db.close();
         res.json({ success: true });
       } catch (e) { res.status(500).json({ success: false }); }
     });
 
-    app.put('/api/mentorship/requests/:id/status', express.json(), (req, res) => {
+    app.put('/api/mentorship/requests/:id/status', express.json(), async (req, res) => {
       try {
-        const db = new Database(getDbPath(), { fileMustExist: true, timeout: 5000 });
         const { status, response } = req.body;
         if (response && (status === 'completed' || status === 'resolved')) {
-          db.prepare('UPDATE "mentorship_requests" SET "status" = ?, "response" = ?, "respondedAt" = datetime("now"), "updatedAt" = datetime("now") WHERE "id" = ?').run(status, response, req.params.id);
+          await AppDataSource.query('UPDATE "mentorship_requests" SET "status" = ?, "response" = ?, "respondedAt" = datetime("now"), "updatedAt" = datetime("now") WHERE "id" = ?', [status, response, req.params.id]);
         } else {
-          db.prepare('UPDATE "mentorship_requests" SET "status" = ?, "updatedAt" = datetime("now") WHERE "id" = ?').run(status, req.params.id);
+          await AppDataSource.query('UPDATE "mentorship_requests" SET "status" = ?, "updatedAt" = datetime("now") WHERE "id" = ?', [status, req.params.id]);
         }
-        db.close();
         res.json({ success: true });
       } catch (e) { res.status(500).json({ success: false }); }
-    });
-
-    // 4. Надійний ендпоінт для збереження розширеного профілю
-    app.put('/api/users/profile-extended', express.json(), (req, res) => {
-      try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader) {
-          res.status(401).json({ success: false, error: 'Unauthorized' });
-          return;
-        }
-        const token = authHeader.split(' ')[1];
-        const payloadStr = Buffer.from(token.split('.')[1], 'base64').toString();
-        const payload = JSON.parse(payloadStr);
-        const userId = payload.id || payload.userId || payload.sub;
-        
-        if (userId) {
-          const activeDbPath = getDbPath();
-          console.log('[Profile Patch] Оновлення профілю у БД:', activeDbPath);
-          const db = new Database(activeDbPath, { fileMustExist: true, timeout: 5000 });
-          
-          // 1. Оновлюємо стандартні поля TypeORM
-          const stmt = db.prepare('UPDATE "users" SET "firstName" = ?, "lastName" = ?, "profilePictureUrl" = ?, "rank" = ?, "position" = ?, "civilProfession" = ? WHERE "id" = ?');
-          const result = stmt.run(
-            req.body.firstName || '', 
-            req.body.lastName || '', 
-            req.body.icon || '', 
-            req.body.rank || '', 
-            req.body.position || '', 
-            req.body.civilProfession || '', 
-            userId
-          );
-          
-          // 2. Зберігаємо позивний в окрему таблицю, щоб TypeORM його не видалив
-          db.prepare('CREATE TABLE IF NOT EXISTS "user_ext" ("userId" varchar PRIMARY KEY, "callsign" varchar)').run();
-          db.prepare('INSERT INTO "user_ext" ("userId", "callsign") VALUES (?, ?) ON CONFLICT("userId") DO UPDATE SET "callsign" = excluded."callsign"')
-            .run(userId, req.body.callsign || '');
-
-          console.log('[Profile Patch] Оновлено рядків:', result.changes);
-          db.close();
-          res.json({ success: true, changes: result.changes });
-        } else {
-          res.status(400).json({ success: false, error: 'No user ID' });
-        }
-      } catch (e) {
-        console.error('Profile patch error:', e);
-        res.status(500).json({ success: false, error: 'Server error' });
-      }
     });
     // ----------------------------------------------------------------
 

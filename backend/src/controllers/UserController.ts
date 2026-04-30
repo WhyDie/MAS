@@ -20,9 +20,12 @@ export class UserController {
         return;
       }
 
-      const { rank, position, civilProfession, icon } = req.body;
+      const { firstName, lastName, callsign, rank, position, civilProfession, icon } = req.body;
 
       // Оновлюємо поля
+      if (firstName !== undefined) user.firstName = firstName;
+      if (lastName !== undefined) user.lastName = lastName;
+      if (callsign !== undefined) (user as any).callsign = callsign;
       if (rank !== undefined) (user as any).rank = rank;
       if (position !== undefined) (user as any).position = position;
       if (civilProfession !== undefined) (user as any).civilProfession = civilProfession;
@@ -30,8 +33,17 @@ export class UserController {
 
       await userRepository.save(user);
 
+      await AppDataSource.query('INSERT INTO "user_ext" ("userId", "callsign") VALUES (?, ?) ON CONFLICT("userId") DO UPDATE SET "callsign" = excluded."callsign"', [user.id, callsign || '']);
+      const rawUser = await AppDataSource.query('SELECT * FROM "user_ext" WHERE "userId" = ?', [user.id]);
+
       const { passwordHash, ...userWithoutPassword } = user;
-      sendSuccess(res, userWithoutPassword, 'Профіль успішно оновлено');
+      const updatedUser = {
+        ...userWithoutPassword,
+        callsign: callsign || '',
+        twoFactorStatus: { isAuthenticatorEnabled: !!rawUser[0]?.isAuthenticatorEnabled, isEmailCodeEnabled: !!rawUser[0]?.isEmailCodeEnabled, isBiometricsEnabled: !!rawUser[0]?.isBiometricsEnabled }
+      };
+
+      sendSuccess(res, updatedUser, 'Профіль успішно оновлено');
     } catch (error) {
       sendError(res, error instanceof Error ? error.message : 'Помилка оновлення профілю', 500);
     }
@@ -58,6 +70,23 @@ export class UserController {
       sendSuccess(res, null, 'Пароль успішно змінено');
     } catch (error) {
       sendError(res, error instanceof Error ? error.message : 'Помилка зміни пароля', 500);
+    }
+  }
+
+  async deleteAccount(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        sendError(res, 'Unauthorized', 401);
+        return;
+      }
+      const userRepository = AppDataSource.getRepository(User);
+      const user = await userRepository.findOne({ where: { id: (req.user as any).userId } });
+      if (!user) { sendError(res, 'Користувача не знайдено', 404); return; }
+
+      await userRepository.remove(user);
+      sendSuccess(res, null, 'Акаунт успішно видалено');
+    } catch (error) {
+      sendError(res, error instanceof Error ? error.message : 'Помилка видалення акаунту', 500);
     }
   }
 }

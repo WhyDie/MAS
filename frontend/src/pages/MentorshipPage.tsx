@@ -21,6 +21,7 @@ interface MentorshipRequest {
   status: 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
   rating?: number;
   feedback?: string;
+  response?: string;
   createdAt: string;
 }
 
@@ -125,31 +126,30 @@ export const MentorshipPage: React.FC = () => {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-          🤝 Менторство
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+          МЕНТОРСТВО
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-          Знайдіть досвідченого наставника або станьте ним
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
+          // ЗНАЙДІТЬ ДОСВІДЧЕНОГО НАСТАВНИКА АБО СТАНЬТЕ НИМ //
         </p>
       </div>
 
       {/* Tab Navigation */}
       <div
-        className="p-3 rounded-none mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
+        className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333] animate-fade-in-up"
       >
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setError(''); setSuccess(''); }}
-              className="btn"
+              className="btn font-bold uppercase tracking-widest"
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
-                border: `1px solid ${activeTab === tab.id ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
+                border: `1px solid ${activeTab === tab.id ? 'var(--ab3-gold)' : '#333'}`,
                 padding: '10px 18px',
-                fontSize: '13px',
+                fontSize: '12px',
               }}
             >
               <span className="mr-2">{tab.icon}</span>
@@ -161,7 +161,7 @@ export const MentorshipPage: React.FC = () => {
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="mb-6 p-5 rounded-none border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171', borderLeft: '4px solid #ef4444' }}>
           <div className="flex items-center gap-3">
             <span className="text-xl">⚠️</span>
             <span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span>
@@ -170,7 +170,7 @@ export const MentorshipPage: React.FC = () => {
       )}
 
       {success && (
-        <div className="mb-6 p-5 rounded-none border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80', borderLeft: '4px solid #22c55e' }}>
           <div className="flex items-center gap-3">
             <span className="text-xl">✅</span>
             <span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span>
@@ -187,14 +187,13 @@ export const MentorshipPage: React.FC = () => {
               type="text"
               value={searchTopic}
               onChange={(e) => setSearchTopic(e.target.value)}
-              placeholder="🔍 Шукати за темою..."
-              className="input"
-              style={{ fontSize: '15px' }}
+            placeholder="🔍 ШУКАТИ ЗА ТЕМОЮ..."
+            className="input w-full font-mono text-xs uppercase tracking-widest"
             />
           </div>
 
           {loading ? (
-            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center bg-[#0a0a0a] border border-[#333]">
               <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
                 <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/>
@@ -202,7 +201,7 @@ export const MentorshipPage: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Завантаження...</p>
             </div>
           ) : mentors.length === 0 ? (
-            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center bg-[#0a0a0a] border border-[#333]">
               <div className="text-6xl mb-4">🤝</div>
               <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>Менторів не знайдено</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Створіть запит і ментор буде призначений</p>
@@ -212,13 +211,12 @@ export const MentorshipPage: React.FC = () => {
               {mentors.map((mentor, index) => (
                 <div
                   key={mentor.id}
-                  className="military-card p-6 animate-fade-in-up transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.6)] relative overflow-hidden group"
+                  className="military-card p-6 bg-[#0a0a0a] border border-[#333] animate-fade-in-up flex flex-col justify-between"
                   style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
                 >
-                  <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-6">
                     <div>
-                      <h3 className="text-lg font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>{getMentorName(mentor)}</h3>
+                      <h3 className="text-lg font-heading font-black uppercase tracking-widest text-white mb-1">{getMentorName(mentor)}</h3>
                       <div className="flex items-center gap-1 mt-1" style={{ color: '#fbbf24' }}>
                         {'★'.repeat(getMentorRating(mentor))}{'☆'.repeat(5 - getMentorRating(mentor))}
                         <span className="text-sm" style={{ color: 'var(--text-muted)' }}>( {getMentorRating(mentor).toFixed(1)} )</span>
@@ -229,29 +227,29 @@ export const MentorshipPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="mb-4">
-                    <p className="text-sm mb-2" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Спеціалізація:</p>
+                  <div className="mb-6">
+                    <p className="font-mono text-xs uppercase tracking-widest text-gray-500 mb-3">Спеціалізація:</p>
                     <div className="flex flex-wrap gap-2">
                       {getMentorSkills(mentor).length > 0 ? (
                         getMentorSkills(mentor).slice(0, 3).map((skill) => (
-                          <span key={skill} className="badge" style={{ background: 'var(--ab3-gold-glow)', color: 'var(--ab3-gold-light)', border: '1px solid rgba(201, 162, 39, 0.2)', fontSize: '11px' }}>
+                          <span key={skill} className="badge rounded-none font-mono uppercase tracking-widest" style={{ background: '#111', color: 'var(--ab3-gold)', border: '1px solid var(--ab3-gold)', fontSize: '10px' }}>
                             {skill}
                           </span>
                         ))
                       ) : (
-                        <span className="badge" style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', fontSize: '11px' }}>
+                        <span className="badge rounded-none font-mono uppercase tracking-widest" style={{ background: '#111', color: 'var(--text-muted)', border: '1px solid #333', fontSize: '10px' }}>
                           Інформація відсутня
                         </span>
                       )}
                       {getMentorSkills(mentor).length > 3 && (
-                        <span className="badge" style={{ background: 'var(--bg-glass)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', fontSize: '11px' }}>
+                        <span className="badge rounded-none font-mono uppercase tracking-widest" style={{ background: '#111', color: 'var(--text-muted)', border: '1px solid #333', fontSize: '10px' }}>
                           +{getMentorSkills(mentor).length - 3}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  <p className="font-mono text-xs uppercase tracking-widest text-gray-400 mb-6">
                     Завершено запитів: <strong style={{ color: '#4ade80' }}>{getMentorCompletedRequests(mentor)}</strong>
                   </p>
 
@@ -260,10 +258,10 @@ export const MentorshipPage: React.FC = () => {
                       setNewRequest({ ...newRequest, mentorId: mentor.id });
                       setActiveTab('create');
                     }}
-                    className="btn btn-primary w-full transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg"
-                    style={{ padding: '12px 18px', fontSize: '13px' }}
+                    className="btn btn-primary w-full uppercase tracking-widest font-bold mt-auto"
+                    style={{ padding: '12px 18px', fontSize: '12px' }}
                   >
-                    Запросити менторство
+                    ЗАПРОСИТИ МЕНТОРСТВО
                   </button>
                 </div>
               ))}
@@ -276,7 +274,7 @@ export const MentorshipPage: React.FC = () => {
       {activeTab === 'my-requests' && (
         <div className="animate-fade-in-up">
           {loading ? (
-            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center bg-[#0a0a0a] border border-[#333]">
               <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
                 <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/>
@@ -284,7 +282,7 @@ export const MentorshipPage: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Завантаження...</p>
             </div>
           ) : myRequests.length === 0 ? (
-            <div className="p-16 rounded-none text-center" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-16 rounded-none text-center bg-[#0a0a0a] border border-[#333]">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>Запитів ще немає</h3>
               <p className="mb-6" style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Створіть перший запит на менторство</p>
@@ -297,12 +295,12 @@ export const MentorshipPage: React.FC = () => {
               {myRequests.map((req, index) => (
                 <div
                   key={req.id}
-                  className="military-card p-6 animate-fade-in-up"
-                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+                  className="military-card p-6 bg-[#0a0a0a] border border-[#333] animate-fade-in-up"
+                  style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both', borderLeft: req.status === 'completed' ? '4px solid #22c55e' : '4px solid var(--ab3-gold)' }}
                 >
                   <div className="flex justify-between items-start flex-wrap gap-3 mb-4">
                     <div>
-                      <h3 className="text-lg font-heading font-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>{req.topic}</h3>
+                      <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-2 text-white">{req.topic}</h3>
                       {getStatusBadge(req.status)}
                     </div>
                     <span className="text-sm" style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
@@ -310,8 +308,8 @@ export const MentorshipPage: React.FC = () => {
                     </span>
                   </div>
                   {req.mentorId && (
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                      Ментор: <strong style={{ color: '#60a5fa' }}>Призначений</strong>
+                    <p className="font-mono text-xs uppercase tracking-widest text-gray-400">
+                      Ментор: <strong className="text-blue-400">ПРИЗНАЧЕНИЙ</strong>
                     </p>
                   )}
                   
@@ -331,37 +329,39 @@ export const MentorshipPage: React.FC = () => {
       {/* Create Request */}
       {activeTab === 'create' && (
         <div
-          className="p-6 rounded-none animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
+          className="p-8 rounded-none bg-[#0a0a0a] border border-[#333] animate-fade-in-up max-w-3xl"
+          style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
         >
-          <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
-            ✉️ Створити новий запит
+          <h2 className="text-xl font-heading font-black uppercase tracking-widest text-white mb-6">
+            ✉️ СТВОРИТИ НОВИЙ ЗАПИТ
           </h2>
           <form onSubmit={handleCreateRequest} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Тема менторинга *</label>
+              <label className="block font-mono text-xs uppercase tracking-widest text-gray-400 mb-2">Тема менторинга *</label>
               <input
                 type="text"
                 value={newRequest.topic}
                 onChange={(e) => setNewRequest({ ...newRequest, topic: e.target.value })}
                 placeholder="Наприклад: тактична підготовка"
-                className="input"
+                className="input w-full"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Опис</label>
+              <label className="block font-mono text-xs uppercase tracking-widest text-gray-400 mb-2">Опис проблеми</label>
               <textarea
                 value={newRequest.description}
                 onChange={(e) => setNewRequest({ ...newRequest, description: e.target.value })}
-                placeholder="Розкажіть більше про те, що вам потрібно..."
-                className="input"
+                placeholder="Опишіть детальніше..."
+                className="input w-full"
                 rows={4}
               />
             </div>
-            <button type="submit" disabled={loading} className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed" style={{ padding: '14px 20px', fontSize: '14px' }}>
-              {loading ? '⏳ Створення...' : '✅ Створити запит'}
-            </button>
+            <div className="pt-4 border-t border-[#222]">
+              <button type="submit" disabled={loading} className="btn btn-primary w-full md:w-auto uppercase tracking-widest font-bold disabled:opacity-50 disabled:cursor-not-allowed" style={{ padding: '14px 32px' }}>
+                {loading ? '⏳ СТВОРЕННЯ...' : '✅ НАДІСЛАТИ ЗАПИТ'}
+              </button>
+            </div>
           </form>
         </div>
       )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
+import { useAuthStore } from '@stores/index'; // Додаємо імпорт useAuthStore
 
 interface ScheduleEvent {
   id: string;
@@ -46,6 +47,7 @@ const emptyEvent: Omit<ScheduleEvent, 'id'> = {
 };
 
 export const ScheduleAdminPage: React.FC = () => {
+  const { user } = useAuthStore(); // Отримуємо дані про поточного користувача
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -100,9 +102,26 @@ export const ScheduleAdminPage: React.FC = () => {
       if (editingEvent) {
         await api.put(`/schedule/events/${editingEvent.id}`, form);
         setSuccess('Подію оновлено');
+        // TODO: Надіслати сповіщення про оновлення події
       } else {
-        await api.post('/schedule/events', form);
+        const res = await api.post('/schedule/events', form); // Зберігаємо результат для отримання ID нової події
         setSuccess('Подію додано');
+        const newEvent = res.data.data; // Припускаємо, що API повертає створену подію
+
+        // --- Логіка надсилання сповіщення ---
+        // Тут ми імітуємо надсилання сповіщення. У реальній програмі це буде API-виклик до бекенд-сервісу сповіщень.
+        console.log('Sending notification for new event:', newEvent);
+        // Приклад даних сповіщення, які ви б надіслали на бекенд:
+        // notificationService.send({
+        //   type: 'new_schedule_event',
+        //   actor: { id: user?.id, name: user?.firstName || 'Адмін', role: user?.role },
+        //   payload: {
+        //     eventId: newEvent.id,
+        //     eventTitle: newEvent.title,
+        //     eventDate: newEvent.startTime.split('T')[0],
+        //   },
+        //   targetUnitId: form.unitId, // Або всім користувачам підрозділу
+        // });
       }
       setShowForm(false);
       loadEvents();
@@ -133,9 +152,9 @@ export const ScheduleAdminPage: React.FC = () => {
   };
 
   return (
-    <div className="animate-fade-in-up">
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>УПРАВЛІННЯ РОЗПОРЯДКОМ</h1>
+    <div className="animate-fade-in-up overflow-x-hidden">
+      <div className="mb-8 text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)' }}>УПРАВЛІННЯ РОЗПОРЯДКОМ</h1>
         <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// РЕДАГУВАННЯ ГРАФІКА //</p>
       </div>
 
@@ -151,17 +170,17 @@ export const ScheduleAdminPage: React.FC = () => {
       )}
 
       {/* Date Picker & Add Button */}
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <label className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>📅 Дата:</label>
-          <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="input" style={{ width: '200px', padding: '8px 14px' }} />
+          <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="input flex-1" style={{ padding: '8px 14px' }} />
         </div>
-        <button onClick={() => openForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати подію</button>
+        <button onClick={() => openForm()} className="btn btn-primary w-full sm:w-auto" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати подію</button>
       </div>
 
       {/* Form */}
       {showForm && (
-        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
+        <div className="p-4 sm:p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingEvent ? '✏️ Редагування події' : '➕ Нова подія'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Побудова" /></div>
@@ -202,9 +221,9 @@ export const ScheduleAdminPage: React.FC = () => {
               const typeCfg = eventTypeConfig[ev.eventType] || eventTypeConfig.other;
               const statusCfg = statusConfig[ev.status] || statusConfig.scheduled;
               return (
-                <div key={ev.id} className="military-card rounded-none p-5 flex items-center gap-4 bg-[#0a0a0a] border border-[#333]" style={{ borderLeft: `4px solid ${typeCfg.color}` }}>
-                  <div className="text-3xl flex-shrink-0">{typeCfg.icon}</div>
-                  <div className="flex-1 min-w-0">
+                <div key={ev.id} className="military-card rounded-none p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#0a0a0a] border border-[#333]" style={{ borderLeft: `4px solid ${typeCfg.color}` }}>
+                  <div className="text-2xl sm:text-3xl flex-shrink-0">{typeCfg.icon}</div>
+                  <div className="flex-1 min-w-0 w-full">
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>{ev.title}</h3>
                       <span className="badge" style={{ background: `${typeCfg.color}20`, color: typeCfg.color, border: `1px solid ${typeCfg.color}40`, fontSize: '10px' }}>{typeCfg.label}</span>
@@ -216,7 +235,7 @@ export const ScheduleAdminPage: React.FC = () => {
                     </div>
                     {ev.description && <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{ev.description}</p>}
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">
                     <button onClick={() => openForm(ev)} className="btn" style={{ background: 'var(--ab3-gold-glow)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--ab3-gold)', padding: '6px 12px', fontSize: '11px' }}>✏️</button>
                     <button onClick={() => deleteEvent(ev.id)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 12px', fontSize: '11px' }}>🗑</button>
                   </div>

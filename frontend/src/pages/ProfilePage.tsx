@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@stores/index';
 import { api } from '@services/api';
 
-interface TrainingStats {
-  totalModules: number;
-  completedModules: number;
-  completionRate: number;
-  inProgressModules: number;
-  averageScore: number;
+interface TwoFactorSetup {
+  otpAuthUrl?: string;
+  secret?: string;
 }
 
 const roleLabels: Record<string, string> = {
@@ -31,11 +29,11 @@ const roleColors: Record<string, string> = {
 const PREDEFINED_ICONS = ['👤', '🪖', '🦅', '🐺', '🦉', '🐻', '🐍', '⚡️', '⚔️', '🛡️'];
 
 export const ProfilePage: React.FC = () => {
-  const { user, setUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'info' | 'progress' | 'settings'>('info');
+  const { user, setUser, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [trainingStats, setTrainingStats] = useState<TrainingStats | null>(null);
 
   // Edit profile
   const [editMode, setEditMode] = useState(false);
@@ -45,6 +43,19 @@ export const ProfilePage: React.FC = () => {
   // Change password
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
+
+  // 2FA & Security state
+  const [isAuthenticatorEnabled, setIsAuthenticatorEnabled] = useState(false);
+  const [isBiometricsEnabled, setIsBiometricsEnabled] = useState(false);
+  const [isEmailCodeEnabled, setIsEmailCodeEnabled] = useState(false);
+  const [twoFactorSetup, setTwoFactorSetup] = useState<TwoFactorSetup | null>(null);
+  const [verificationCode, setVerificationCode] = useState('');
+
+  // Modal states
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteStep1, setShowDeleteStep1] = useState(false);
+  const [showDeleteStep2, setShowDeleteStep2] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -57,24 +68,19 @@ export const ProfilePage: React.FC = () => {
         civilProfession: user.civilProfession || '',
         icon: (user as any).profilePictureUrl || (user as any).icon || '',
       });
-    }
-    loadStats();
-  }, [user]);
 
-  const loadStats = async () => {
-    try {
-      const res = await api.get('/training/stats');
-      setTrainingStats(res.data);
-    } catch (err) {
-      console.error('Failed to load stats:', err);
+      // Завантажуємо поточні налаштування 2FA
+      const twoFactorStatus = (user as any).twoFactorStatus || {};
+      setIsAuthenticatorEnabled(twoFactorStatus.isAuthenticatorEnabled || false);
+      setIsBiometricsEnabled(twoFactorStatus.isBiometricsEnabled || false);
+      setIsEmailCodeEnabled(twoFactorStatus.isEmailCodeEnabled || false);
     }
-  };
+  }, [user]);
 
   const saveProfile = async () => {
     try {
       setSavingProfile(true);
-      // Надійно зберігаємо всі поля єдиним запитом
-      await api.put('/users/profile-extended', profileForm);
+      await api.put('/users/profile-extended', profileForm); // Використовуємо правильний ендпоінт
       setUser({ ...user, ...profileForm, profilePictureUrl: profileForm.icon } as any);
       setSuccess('Профіль оновлено');
       setEditMode(false);
@@ -97,7 +103,7 @@ export const ProfilePage: React.FC = () => {
     try {
       setChangingPassword(true);
       // Відправляємо запит на зміну пароля
-      await api.put('/users/change-password', {
+      await api.put('/users/change-password', { // Використовуємо правильний ендпоінт
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       });
@@ -121,14 +127,126 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleToggleAuthenticator = async () => {
+    if (isAuthenticatorEnabled) {
+      try {
+        await api.post('/auth/2fa/disable', { method: 'authenticator' });
+        setIsAuthenticatorEnabled(false);
+        setTwoFactorSetup(null);
+        setSuccess('Аутентифікатор вимкнено.');
+      } catch (err: any) { setError(err.response?.data?.error || 'Не вдалося вимкнути аутентифікатор'); }
+    } else {
+      try {
+        const res = await api.post('/auth/2fa/generate-authenticator');
+        setTwoFactorSetup(res.data.data);
+      } catch (err: any) { setError(err.response?.data?.error || 'Не вдалося згенерувати QR-код'); }
+    }
+  };
+
+  const handleVerifyAuthenticator = async () => {
+    try {
+      await api.post('/auth/2fa/verify-authenticator', { code: verificationCode });
+      setIsAuthenticatorEnabled(true);
+      setTwoFactorSetup(null);
+      setVerificationCode('');
+      setSuccess('Аутентифікатор увімкнено.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Невірний код підтвердження');
+    }
+  };
+
+  const handleToggleBiometrics = async () => {
+    // Захист: вимагаємо наявність іншого способу
+    if (!isAuthenticatorEnabled && !isEmailCodeEnabled && !isBiometricsEnabled) {
+      setError('Для використання біометрії необхідно спочатку налаштувати Аутентифікатор або Пошту як резервний спосіб.');
+      return;
+    }
+    try {
+      if (isBiometricsEnabled) {
+        await api.post('/auth/2fa/disable', { method: 'biometrics' });
+        setIsBiometricsEnabled(false);
+        setSuccess('Біометрію вимкнено.');
+      } else {
+        if (!window.PublicKeyCredential || !window.isSecureContext) {
+          setError('Не можна активувати біометрію в цьому браузері.');
+          return;
+        }
+
+        // Реальний виклик біометричного сенсора пристрою (FaceID / Відбиток)
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const credential = await navigator.credentials.create({
+          publicKey: {
+            challenge: challenge,
+            rp: { name: 'Military System', id: window.location.hostname },
+            user: { id: new Uint8Array(16), name: user?.email || 'user', displayName: user?.email || 'user' },
+            pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+            authenticatorSelection: { userVerification: 'required' },
+            timeout: 60000,
+            attestation: 'none'
+          }
+        }) as PublicKeyCredential;
+        
+        if (!credential) return; // Користувач скасував сканування
+        await api.post('/auth/2fa/setup-biometrics', { credentialId: credential.id });
+        setIsBiometricsEnabled(true);
+        setSuccess('Біометрію увімкнено!');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Помилка налаштування біометрії. Скасовано.');
+    }
+  };
+
+  const handleToggleEmailCode = async () => {
+    if (isEmailCodeEnabled) {
+      await api.post('/auth/2fa/disable', { method: 'email' });
+      setIsEmailCodeEnabled(false);
+      setSuccess('Код на пошту вимкнено.');
+    } else {
+      const emailToUse = prompt('На яку пошту надсилати код? Залиште пустим, щоб використовувати пошту профілю.', user?.email);
+      if (emailToUse !== null) {
+        try {
+          await api.post('/auth/2fa/setup-email', { email: emailToUse || user?.email });
+          setIsEmailCodeEnabled(true);
+          setSuccess(`Код на пошту увімкнено для ${emailToUse || user?.email}.`);
+        } catch (err: any) {
+          setError(err.response?.data?.error || 'Не вдалося підключити пошту');
+        }
+      }
+    }
+  };
+
+  const executeDeleteAccount = async () => {
+    if (deleteInput !== 'ВИДАЛИТИ') {
+      setError('Невірне слово підтвердження. Акаунт не видалено.');
+      setShowDeleteStep2(false);
+      setDeleteInput('');
+      return;
+    }
+    try {
+      await api.delete('/users/me');
+      setShowDeleteStep2(false);
+      logout();
+      navigate('/login');
+    } catch (err) {
+      setError('Не вдалося видалити акаунт.');
+      setShowDeleteStep2(false);
+    }
+  };
+
+  const executeLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+    navigate('/login');
+  };
+
   if (!user) return null;
 
   const roleColor = roleColors[user.role] || '#6b7280';
 
   const tabs = [
     { id: 'info' as const, label: '👤 Профіль' },
-    { id: 'progress' as const, label: '📊 Прогрес' },
-    { id: 'settings' as const, label: '⚙️ Налаштування' },
+    { id: 'security' as const, label: '🛡️ Безпека' },
   ];
 
   return (
@@ -206,7 +324,10 @@ export const ProfilePage: React.FC = () => {
               </div>
 
               {!editMode ? (
-                <button onClick={() => setEditMode(true)} className="btn btn-primary w-full" style={{ padding: '12px 20px', fontSize: '14px' }}>✏️ Редагувати профіль</button>
+                <div className="space-y-3">
+                  <button onClick={() => setEditMode(true)} className="btn btn-primary w-full" style={{ padding: '12px 20px', fontSize: '14px' }}>✏️ Редагувати профіль</button>
+                  <button onClick={() => setShowLogoutModal(true)} className="btn w-full" style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 20px', fontSize: '14px' }}>🚪 Вийти з акаунту</button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div>
@@ -303,59 +424,11 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* ===== PROGRESS TAB ===== */}
-      {activeTab === 'progress' && (
+      {/* ===== SECURITY TAB ===== */}
+      {activeTab === 'security' && (
         <div className="space-y-6">
           <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
-            <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>📊 Прогрес навчання</h3>
-            {trainingStats ? (
-              <div>
-                {/* Progress Bar */}
-                <div className="mb-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Загальний прогрес</span>
-                    <span className="text-sm font-bold" style={{ color: 'var(--ab3-gold)' }}>{trainingStats.completionRate}%</span>
-                  </div>
-                  <div className="w-full rounded-none h-4 overflow-hidden" style={{ background: 'var(--ab3-gray-800)' }}>
-                    <div
-                      className="h-full rounded-none transition-all duration-1000"
-                      style={{ width: `${trainingStats.completionRate}%`, background: 'var(--gradient-gold)' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-5 rounded-none bg-[#111]">
-                    <p className="text-4xl font-bold" style={{ color: '#22c55e' }}>{trainingStats.completedModules}</p>
-                    <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Модулів завершено</p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>з {trainingStats.totalModules}</p>
-                  </div>
-                  <div className="text-center p-5 rounded-none bg-[#111]">
-                    <p className="text-4xl font-bold" style={{ color: '#3b82f6' }}>{trainingStats.inProgressModules}</p>
-                    <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>В процесі</p>
-                  </div>
-                  <div className="text-center p-5 rounded-none bg-[#111]">
-                    <p className="text-4xl font-bold" style={{ color: '#f59e0b' }}>{trainingStats.averageScore}%</p>
-                    <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Середній бал</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <div className="text-6xl mb-4">📊</div>
-                <h4 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Статистики немає</h4>
-                <p style={{ color: 'var(--text-muted)' }}>Пройдіть хоча б один навчальний модуль</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ===== SETTINGS TAB ===== */}
-      {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
-            <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>🔒 Зміна паролю</h3>
+            <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}> Безпека та пароль</h3>
             <div className="space-y-4 max-w-md">
               <div>
                 <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Поточний пароль</label>
@@ -370,6 +443,85 @@ export const ProfilePage: React.FC = () => {
                 <input type="password" className="input" value={passwordForm.confirmPassword} onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} placeholder="Повторіть новий пароль" />
               </div>
               <button onClick={changePassword} disabled={changingPassword} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '14px' }}>{changingPassword ? '⏳...' : '🔑 Змінити пароль'}</button>
+            </div>
+          </div>
+
+          {/* 2FA */}
+          <div className="p-4 sm:p-6 bg-[#0a0a0a] border border-[#333] mt-6">
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest mb-6" style={{ color: 'var(--text-primary)' }}>Двофакторна аутентифікація (2FA)</h2>
+            <p className="text-sm text-gray-400 mb-6">Підвищіть безпеку свого акаунту, увімкнувши один або декілька методів перевірки.</p>
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border border-[#333]"><div className="flex-1"><h3 className="font-bold text-white">📱 Додаток-аутентифікатор</h3><p className="text-xs text-gray-400 mt-1">Використовуйте Google Authenticator, Authy, або інший TOTP-додаток.</p></div><button onClick={handleToggleAuthenticator} className={`btn ${isAuthenticatorEnabled ? 'btn-danger' : 'btn-primary'}`}>{isAuthenticatorEnabled ? 'Вимкнути' : 'Увімкнути'}</button></div>
+              {twoFactorSetup && (<div className="p-4 border border-[var(--ab3-gold)] bg-[#111] space-y-4"><p className="text-sm text-gray-300">1. Відскануйте QR-код за допомогою додатку-аутентифікатора.</p><div className="bg-white p-2 inline-block"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(twoFactorSetup.otpAuthUrl || '')}`} alt="QR Code" /></div><p className="text-sm text-gray-300">Або введіть цей ключ вручну:</p><p className="font-mono p-2 bg-black border border-[#333] text-center text-lg tracking-widest">{twoFactorSetup.secret}</p><p className="text-sm text-gray-300">2. Введіть 6-значний код з додатку для підтвердження.</p><div className="flex gap-2"><input className="input" placeholder="123456" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} /><button onClick={handleVerifyAuthenticator} className="btn btn-primary">Підтвердити</button></div></div>)}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border border-[#333]"><div className="flex-1"><h3 className="font-bold text-white">🖐️ Біометрія (Відбиток пальця / Face ID)</h3><p className="text-xs text-gray-400 mt-1">Використовуйте біометричні дані вашого пристрою для швидкого входу.</p></div><button onClick={handleToggleBiometrics} className={`btn ${isBiometricsEnabled ? 'btn-danger' : 'btn-primary'}`}>{isBiometricsEnabled ? 'Вимкнути' : 'Увімкнути'}</button></div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border border-[#333]"><div className="flex-1"><h3 className="font-bold text-white">✉️ Код на пошту</h3><p className="text-xs text-gray-400 mt-1">Отримуйте одноразовий код на вашу пошту при кожному вході.</p></div><button onClick={handleToggleEmailCode} className={`btn ${isEmailCodeEnabled ? 'btn-danger' : 'btn-primary'}`}>{isEmailCodeEnabled ? 'Вимкнути' : 'Увімкнути'}</button></div>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="p-4 sm:p-6 bg-[#0a0a0a] border-2 border-red-500/50 mt-6">
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest mb-4 text-red-500">НЕБЕЗПЕЧНА ЗОНА</h2>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div><h3 className="font-bold text-white">Видалення акаунту</h3><p className="text-xs text-gray-400 mt-1">Ця дія є незворотною. Всі ваші дані, прогрес та налаштування будуть видалені назавжди.</p></div>
+              <button onClick={() => setShowDeleteStep1(true)} className="btn btn-danger">Видалити акаунт</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- CUSTOM MODALS --- */}
+
+      {/* Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+            <h3 className="text-xl font-heading font-black text-white uppercase tracking-widest mb-3">Вихід із системи</h3>
+            <p className="text-sm text-gray-400 mb-6 leading-relaxed">Чи точно ви бажаєте завершити поточний сеанс та вийти з акаунту?</p>
+            <div className="flex gap-3">
+              <button onClick={executeLogout} className="btn btn-primary flex-1 py-3 text-sm">🚪 Вийти</button>
+              <button onClick={() => setShowLogoutModal(false)} className="btn flex-1 py-3 text-sm" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)' }}>Скасувати</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Step 1 Modal */}
+      {showDeleteStep1 && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-red-500 p-6 max-w-md w-full shadow-[0_0_40px_rgba(239,68,68,0.15)] animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">⚠️</span>
+              <h3 className="text-xl font-heading font-black text-red-500 uppercase tracking-widest">Критична дія</h3>
+            </div>
+            <p className="text-sm text-gray-300 mb-6 leading-relaxed">
+              Чи точно ви бажаєте безповоротно видалити свій акаунт? Усі ваші дані, історія навчання, прогрес та налаштування будуть знищені. <strong className="text-red-400">Цю дію неможливо скасувати.</strong>
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => { setShowDeleteStep1(false); setShowDeleteStep2(true); setDeleteInput(''); }} className="btn btn-danger flex-1 py-3 text-sm">Так, видалити</button>
+              <button onClick={() => setShowDeleteStep1(false)} className="btn flex-1 py-3 text-sm" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)' }}>Скасувати</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Step 2 Modal */}
+      {showDeleteStep2 && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-red-500 p-6 max-w-md w-full shadow-[0_0_40px_rgba(239,68,68,0.15)] animate-scale-in">
+            <h3 className="text-xl font-heading font-black text-red-500 uppercase tracking-widest mb-3">Остаточне підтвердження</h3>
+            <p className="text-sm text-gray-400 mb-4 leading-relaxed">
+              Для підтвердження видалення введіть слово <strong className="text-red-500 tracking-widest">ВИДАЛИТИ</strong> у поле нижче:
+            </p>
+            <input 
+              type="text" 
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              placeholder="ВИДАЛИТИ"
+              className="input w-full mb-6 font-mono text-center tracking-widest text-red-500 border-red-500/30 focus:border-red-500"
+            />
+            <div className="flex gap-3">
+              <button onClick={executeDeleteAccount} disabled={deleteInput !== 'ВИДАЛИТИ'} className="btn btn-danger flex-1 py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed">Знищити акаунт</button>
+              <button onClick={() => { setShowDeleteStep2(false); setDeleteInput(''); }} className="btn flex-1 py-3 text-sm" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)' }}>Скасувати</button>
             </div>
           </div>
         </div>

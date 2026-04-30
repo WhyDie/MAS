@@ -4,7 +4,26 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
-router.put('/profile', authMiddleware, userController.updateProfile);
-router.put('/change-password', authMiddleware, userController.changePassword);
+// Оновлення розширеного профілю користувача
+// (ім'я, прізвище, позивний, звання, посада, іконка і т.д.)
+router.put(
+  '/profile-extended',
+  authMiddleware,
+  userController.updateProfile
+);
+
+// Зміна пароля користувача
+router.put(
+  '/change-password',
+  authMiddleware,
+  userController.changePassword
+);
+
+// Видалення власного акаунту
+router.delete(
+  '/me',
+  authMiddleware,
+  userController.deleteAccount
+);
 
 export default router;

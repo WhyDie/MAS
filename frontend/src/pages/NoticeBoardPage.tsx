@@ -36,10 +36,10 @@ export const NoticeBoardPage: React.FC = () => {
   });
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up overflow-x-hidden">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+      <div className="mb-8 text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', lineHeight: '1.2' }}>
           ДОШКА ОГОЛОШЕНЬ
         </h1>
         <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
@@ -87,7 +87,7 @@ export const NoticeBoardPage: React.FC = () => {
           filteredAnnouncements.map((a, index) => {
             const config = typeConfig[a.type];
             return (
-              <div key={a.id} className="p-6 bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:translate-x-1 animate-fade-in-up relative overflow-hidden" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both', borderLeft: `4px solid ${config.color}` }}>
+              <div key={a.id} className="p-4 sm:p-6 bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:translate-x-1 animate-fade-in-up relative overflow-hidden" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both', borderLeft: `4px solid ${config.color}` }}>
                 
                 <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
                   <div>

@@ -60,32 +60,32 @@ export const TrainingModuleDetailPage: React.FC = () => {
   const contentText = typeof module.content === 'object' ? module.content.text || '' : (module.content || '');
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="animate-fade-in-up overflow-x-hidden">
       {/* Back button */}
       <button onClick={() => navigate('/training')} className="mb-6 btn" style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '10px 20px', fontSize: '13px' }}>
         ← Назад до модулів
       </button>
 
       {/* Header */}
-      <div className="p-8 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
+      <div className="p-4 sm:p-6 lg:p-8 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
         <div className="flex flex-wrap gap-3 mb-4">
           <span className="badge badge-gold">{module.category}</span>
           <span className="badge" style={{ background: `${diff.color}20`, color: diff.color, border: `1px solid ${diff.color}40`, fontSize: '11px' }}>{diff.label}</span>
           <span className="badge badge-info">⏱ {module.durationMinutes} хв</span>
         </div>
 
-        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-4" style={{ color: 'var(--text-primary)', fontSize: '30px', lineHeight: '1.2' }}>
+        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-4" style={{ color: 'var(--text-primary)', lineHeight: '1.2' }}>
           {module.title}
         </h1>
 
-        <p className="text-lg" style={{ color: 'var(--text-secondary)', fontSize: '17px', lineHeight: '1.6' }}>
+        <p className="text-base sm:text-lg" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
           {module.description}
         </p>
 
-        <div className="flex gap-6 mt-6 pt-6" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+        <div className="flex gap-4 sm:gap-6 mt-6 pt-6" style={{ borderTop: '1px solid var(--border-subtle)' }}>
           <div>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Переглядів</p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--ab3-gold)' }}>{module.viewCount || 0}</p>
+            <p className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--ab3-gold)' }}>{module.viewCount || 0}</p>
           </div>
           <div>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Категорія</p>
@@ -96,7 +96,7 @@ export const TrainingModuleDetailPage: React.FC = () => {
 
       {/* Content */}
       {contentText && (
-        <div className="p-8 rounded-none bg-[#0a0a0a] border border-[#333]">
+        <div className="p-4 sm:p-6 lg:p-8 rounded-none bg-[#0a0a0a] border border-[#333]">
           <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--ab3-gold)', fontSize: '22px' }}>📖 Зміст модуля</h2>
           <div className="prose" style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7' }}>
             {contentText.split('\n').map((line: string, i: number) => {
