@@ -37,7 +37,7 @@ export const ProfilePage: React.FC = () => {
 
   // Edit profile
   const [editMode, setEditMode] = useState(false);
-  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', callsign: '', rank: '', position: '', civilProfession: '', icon: '', signature: '' });
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', middleName: '', callsign: '', rank: '', position: '', civilProfession: '', icon: '', signature: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const sigCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawingSig, setIsDrawingSig] = useState(false);
@@ -68,6 +68,7 @@ export const ProfilePage: React.FC = () => {
       setProfileForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
+        middleName: (user as any).middleName || '',
         callsign: (user as any).callsign || '',
         rank: user.rank || '',
         position: user.position || '',
@@ -418,8 +419,8 @@ export const ProfilePage: React.FC = () => {
                     return currentIcon || (user.firstName ? `${user.firstName.charAt(0)}${user.lastName?.charAt(0) || ''}` : '👤');
                   })()}
                 </div>
-                <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>
-                  {user.firstName} {user.lastName}
+                <h2 className="text-xl font-heading font-black uppercase tracking-widest leading-tight" style={{ color: 'var(--text-primary)' }}>
+                  {user.lastName} {user.firstName} <br className="sm:hidden" />{(user as any).middleName}
                 </h2>
                 {(user as any).callsign && <p className="text-sm font-bold text-[var(--ab3-gold)] mt-1">"{ (user as any).callsign }"</p>}
                 <span className="badge rounded-none font-mono uppercase tracking-widest mt-2" style={{ background: `${roleColor}15`, color: roleColor, border: `1px solid ${roleColor}`, fontSize: '10px' }}>
@@ -441,6 +442,10 @@ export const ProfilePage: React.FC = () => {
                   <div>
                     <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Прізвище</label>
                     <input className="input" value={profileForm.lastName} onChange={e => setProfileForm({ ...profileForm, lastName: e.target.value })} placeholder="Коваленко" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>По батькові</label>
+                    <input className="input" value={profileForm.middleName} onChange={e => setProfileForm({ ...profileForm, middleName: e.target.value })} placeholder="Іванович" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Позивний</label>
@@ -503,7 +508,7 @@ export const ProfilePage: React.FC = () => {
 
                   <div className="flex gap-2">
                     <button onClick={saveProfile} disabled={savingProfile} className="btn btn-primary flex-1 disabled:opacity-50" style={{ padding: '10px 16px', fontSize: '13px' }}>{savingProfile ? '⏳...' : '💾 Зберегти'}</button>
-                    <button onClick={() => { setEditMode(false); setProfileForm({ firstName: user.firstName || '', lastName: user.lastName || '', callsign: (user as any).callsign || '', rank: user.rank || '', position: user.position || '', civilProfession: user.civilProfession || '', icon: (user as any).profilePictureUrl || (user as any).icon || '', signature: (user as any).signature || '' }); }} className="btn flex-1" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 16px', fontSize: '13px' }}>Скасувати</button>
+                    <button onClick={() => { setEditMode(false); setProfileForm({ firstName: user.firstName || '', lastName: user.lastName || '', middleName: (user as any).middleName || '', callsign: (user as any).callsign || '', rank: user.rank || '', position: user.position || '', civilProfession: user.civilProfession || '', icon: (user as any).profilePictureUrl || (user as any).icon || '', signature: (user as any).signature || '' }); }} className="btn flex-1" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 16px', fontSize: '13px' }}>Скасувати</button>
                   </div>
                 </div>
               )}

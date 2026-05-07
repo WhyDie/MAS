@@ -6,6 +6,11 @@ import * as crypto from 'crypto';
 
 const router = Router();
 
+// Забезпечуємо наявність колонки middleName у базі даних (По батькові)
+AppDataSource.query('ALTER TABLE "users" ADD COLUMN "middleName" varchar').catch(() => {
+  // Ігноруємо помилку, якщо колонка вже існує
+});
+
 const getUserId = (req: any) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) throw new Error('Unauthorized');
@@ -18,7 +23,8 @@ const getUserId = (req: any) => {
 
 router.get('/', async (req, res) => {
   try {
-    // Автоматичне очищення "мертвих" підрозділів (де немає жодного бійця)
+    // ТИМЧАСОВО ВИМКНЕНО: викликало Race Condition при створенні нового підрозділу
+    /*
     const ghostUnits = await AppDataSource.query('SELECT m.id FROM "military_units" m LEFT JOIN "users" u ON m.id = u."unitId" WHERE u.id IS NULL');
     if (ghostUnits.length > 0) {
       for (const ghost of ghostUnits) {
@@ -27,6 +33,7 @@ router.get('/', async (req, res) => {
         await AppDataSource.query('DELETE FROM "military_units" WHERE id = ?', [ghost.id]);
       }
     }
+    */
 
     const units = await AppDataSource.query('SELECT u.*, c."lastName" as "commanderName", c."rank" as "commanderRank" FROM "military_units" u LEFT JOIN "users" c ON u."commanderId" = c.id');
     sendSuccess(res, units);
@@ -135,7 +142,7 @@ router.post('/:id/request-join', async (req, res) => {
 
 router.get('/:id/requests', async (req, res) => {
   try {
-    const requests = await AppDataSource.query('SELECT r.*, u."firstName", u."lastName", u."rank", u."position" FROM "unit_join_requests" r JOIN "users" u ON r."userId" = u.id WHERE r."unitId" = ? AND r."status" = ?', [req.params.id, 'pending']);
+    const requests = await AppDataSource.query('SELECT r.*, u."firstName", u."lastName", u."middleName", u."rank", u."position" FROM "unit_join_requests" r JOIN "users" u ON r."userId" = u.id WHERE r."unitId" = ? AND r."status" = ?', [req.params.id, 'pending']);
     sendSuccess(res, requests);
   } catch (e) { sendError(res, 'Помилка сервера', 500); }
 });
@@ -163,7 +170,7 @@ router.get('/:id/members', async (req, res) => {
     // Збагачений запит для Панелі Командира: підтягуємо статистику та останній логін кожного бійця
     const members = await AppDataSource.query(`
       SELECT 
-        u.id, u."firstName", u."lastName", u."rank", u."role", u."position", u."lastLoginAt",
+        u.id, u."firstName", u."lastName", u."middleName", u."rank", u."role", u."position", u."lastLoginAt",
         (SELECT COUNT(*) FROM "xt_user_progress" p WHERE p."userId" = u.id AND p.status = 'completed') as "completedModules",
         (SELECT AVG(score) FROM "xt_simulator_attempts" s WHERE s."userId" = u.id) as "avgSimScore"
       FROM "users" u 
@@ -227,7 +234,7 @@ router.get('/my/leaderboard', async (req, res) => {
 
     const topUsers = await AppDataSource.query(`
       SELECT 
-        u.id, u."firstName", u."lastName", u."callsign", u."rank", u."role", u."profilePictureUrl",
+        u.id, u."firstName", u."lastName", u."middleName", u."callsign", u."rank", u."role", u."profilePictureUrl",
         (
           (SELECT COUNT(*) FROM "xt_user_progress" p WHERE p."userId" = u.id AND p.status = 'completed') * 500 +
           COALESCE((SELECT AVG(score) * 10 FROM "xt_simulator_attempts" s WHERE s."userId" = u.id), 0) +
@@ -250,7 +257,7 @@ router.get('/users/search', async (req, res) => {
     const { q } = req.query;
     if (!q || String(q).length < 2) return sendSuccess(res, []);
     const query = `%${q}%`;
-    const users = await AppDataSource.query('SELECT id, "firstName", "lastName", "rank", "position" FROM "users" WHERE "firstName" LIKE ? OR "lastName" LIKE ? LIMIT 10', [query, query]);
+    const users = await AppDataSource.query('SELECT id, "firstName", "lastName", "middleName", "rank", "position" FROM "users" WHERE "firstName" LIKE ? OR "lastName" LIKE ? OR "middleName" LIKE ? LIMIT 10', [query, query, query]);
     sendSuccess(res, users);
   } catch (e) { sendError(res, 'Помилка пошуку', 500); }
 });
@@ -259,7 +266,7 @@ router.get('/chat/contacts', async (req, res) => {
   try {
     const userId = getUserId(req);
     const contacts = await AppDataSource.query(`
-      SELECT DISTINCT u.id, u."firstName", u."lastName", u.rank 
+      SELECT DISTINCT u.id, u."firstName", u."lastName", u."middleName", u.rank 
       FROM "users" u 
       JOIN "direct_messages" m ON u.id = m."senderId" OR u.id = m."receiverId" 
       WHERE (m."senderId" = ? OR m."receiverId" = ?) AND u.id != ?
@@ -271,7 +278,7 @@ router.get('/chat/contacts', async (req, res) => {
 router.get('/:id/chat/:channel', async (req, res) => {
   try {
     const channel = req.params.channel || 'general';
-    const messages = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."rank" FROM "unit_chat_messages" m JOIN "users" u ON m."senderId" = u.id WHERE m."unitId" = ? AND m.channel = ? ORDER BY m."createdAt" ASC LIMIT 200`, [req.params.id, channel]);
+    const messages = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."middleName", u."rank" FROM "unit_chat_messages" m JOIN "users" u ON m."senderId" = u.id WHERE m."unitId" = ? AND m.channel = ? ORDER BY m."createdAt" ASC LIMIT 200`, [req.params.id, channel]);
     sendSuccess(res, messages);
   } catch (e) { sendError(res, 'Помилка', 500); }
 });
@@ -305,7 +312,7 @@ router.get('/dm/:userId', async (req, res) => {
   try {
     const me = getUserId(req);
     const them = req.params.userId;
-    const messages = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."rank" FROM "direct_messages" m JOIN "users" u ON m."senderId" = u.id WHERE (m."senderId" = ? AND m."receiverId" = ?) OR (m."senderId" = ? AND m."receiverId" = ?) ORDER BY m."createdAt" ASC LIMIT 100`, [me, them, them, me]);
+    const messages = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."middleName", u."rank" FROM "direct_messages" m JOIN "users" u ON m."senderId" = u.id WHERE (m."senderId" = ? AND m."receiverId" = ?) OR (m."senderId" = ? AND m."receiverId" = ?) ORDER BY m."createdAt" ASC LIMIT 100`, [me, them, them, me]);
     sendSuccess(res, messages);
   } catch (e) { sendError(res, 'Помилка', 500); }
 });
