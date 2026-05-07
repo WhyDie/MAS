@@ -270,11 +270,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
   const [isRedLight, setIsRedLight] = useState(false);
-  
-  // --- Tactical Calculator State ---
-  const [showCalcModal, setShowCalcModal] = useState(false);
-  const [calcCoords, setCalcCoords] = useState({ x1: '', y1: '', x2: '', y2: '' });
-  const [calcResult, setCalcResult] = useState<{dist: number, az: number} | null>(null);
 
   // --- Search State ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -364,26 +359,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     setShowLogoutModal(false);
     logout();
     navigate('/login');
-  };
-
-  const executePanicWipe = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    logout();
-    window.location.href = '/login';
-  };
-
-  const calculateAzimuth = () => {
-    const x1 = parseFloat(calcCoords.x1); const y1 = parseFloat(calcCoords.y1);
-    const x2 = parseFloat(calcCoords.x2); const y2 = parseFloat(calcCoords.y2);
-    if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
-    
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    let angle = Math.atan2(dx, dy) * (180 / Math.PI);
-    if (angle < 0) angle += 360;
-    setCalcResult({ dist: Math.round(dist), az: Math.round(angle * 100) / 100 });
   };
 
   const isActivePath = (path: string): boolean => {
@@ -511,15 +486,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               )}
             </div>
 
-        {/* Tactical Calculator Toggle */}
-        <button
-          onClick={() => setShowCalcModal(true)}
-          title="Топографічний / Балістичний обчислювач"
-          className="hidden sm:flex items-center justify-center w-10 h-10 rounded-none border border-[#333] bg-[#111] text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-all mr-2"
-        >
-          🧭
-        </button>
-
         {/* Tactical Theme Toggle */}
         <button
           onClick={() => setIsRedLight(!isRedLight)}
@@ -527,15 +493,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           className={`hidden sm:flex items-center justify-center w-10 h-10 rounded-none border transition-all ${isRedLight ? 'bg-red-900 border-red-500 text-red-500 shadow-[0_0_15px_red]' : 'bg-[#111] border-[#333] text-gray-500 hover:border-red-500 hover:text-red-500'}`}
         >
           👁️
-        </button>
-
-        {/* Panic Button */}
-        <button
-          onDoubleClick={executePanicWipe}
-          title="СТЕРТИ ДАНІ ТА ВИЙТИ (Подвійний клік)"
-          className="hidden md:flex items-center justify-center w-10 h-10 rounded-none border border-[#333] bg-[#111] text-gray-500 hover:bg-red-900 hover:border-red-500 hover:text-red-500 transition-all"
-        >
-          ☠️
         </button>
 
             <NotificationBell />
@@ -802,60 +759,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button onClick={executeLogout} className="flex-1 bg-[var(--ab3-gold)] text-black font-mono font-bold uppercase tracking-widest px-4 py-3 hover:bg-yellow-400 transition-colors shadow-[4px_4px_0_0_rgba(201,162,39,0.2)]">ПІДТВЕРДИТИ</button>
               <button onClick={() => setShowLogoutModal(false)} className="flex-1 bg-[#111] border border-[#333] text-white font-mono font-bold uppercase tracking-widest px-4 py-3 hover:bg-[#222] transition-colors">СКАСУВАТИ</button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tactical Calculator Modal */}
-      {showCalcModal && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#0a0a0a] border border-[#333] border-t-4 border-t-blue-500 p-8 max-w-sm w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden font-mono">
-            <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500 opacity-10 blur-2xl pointer-events-none"></div>
-            
-            <div className="flex justify-between items-center mb-6 border-b border-[#222] pb-4">
-              <h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <span className="text-blue-500">🧭</span> ОБЧИСЛЮВАЧ
-              </h3>
-              <button onClick={() => { setShowCalcModal(false); setCalcResult(null); }} className="text-gray-500 hover:text-red-500 text-xl font-sans">×</button>
-            </div>
-            
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Введіть координати для обчислення дистанції та азимуту:</p>
-            
-            <div className="space-y-4 mb-6">
-              <div className="p-3 border border-[#333] bg-[#111]">
-                <p className="text-[10px] text-[var(--ab3-gold)] mb-2 uppercase font-bold tracking-widest">Точка 1 (Ваша позиція)</p>
-                <div className="flex gap-2">
-                  <input type="number" placeholder="X (Схід)" value={calcCoords.x1} onChange={e=>setCalcCoords({...calcCoords, x1: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
-                  <input type="number" placeholder="Y (Північ)" value={calcCoords.y1} onChange={e=>setCalcCoords({...calcCoords, y1: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
-                </div>
-              </div>
-              
-              <div className="p-3 border border-[#333] bg-[#111]">
-                <p className="text-[10px] text-red-500 mb-2 uppercase font-bold tracking-widest">Точка 2 (Ціль)</p>
-                <div className="flex gap-2">
-                  <input type="number" placeholder="X (Схід)" value={calcCoords.x2} onChange={e=>setCalcCoords({...calcCoords, x2: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
-                  <input type="number" placeholder="Y (Північ)" value={calcCoords.y2} onChange={e=>setCalcCoords({...calcCoords, y2: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
-                </div>
-              </div>
-            </div>
-            
-            <button onClick={calculateAzimuth} className="w-full bg-blue-900/30 border border-blue-900 text-blue-400 font-bold uppercase tracking-widest px-4 py-3 hover:bg-blue-600 hover:text-white transition-colors mb-6 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
-              В ОБЧИСЛЮВАЧ
-            </button>
-
-            {calcResult && (
-              <div className="p-4 bg-green-950/20 border border-green-900 animate-fade-in-up">
-                <p className="text-[10px] text-green-500 uppercase tracking-widest mb-2 border-b border-green-900/50 pb-1">РЕЗУЛЬТАТИ РОЗРАХУНКУ:</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">ДИСТАНЦІЯ:</span>
-                  <span className="text-lg font-black text-white">{calcResult.dist} <span className="text-xs font-normal">м</span></span>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-gray-400">АЗИМУТ (Прямий):</span>
-                  <span className="text-lg font-black text-[var(--ab3-gold)]">{calcResult.az}°</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
