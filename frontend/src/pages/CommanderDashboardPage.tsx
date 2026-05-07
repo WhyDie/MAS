@@ -1,299 +1,242 @@
-import React, { useState } from 'react';
-
-interface Soldier {
-  name: string;
-  rank: string;
-  tacticalMed: number;
-  weapons: number;
-  topography: number;
-  leadership: number;
-  completedModules: number;
-  totalModules: number;
-}
+import React, { useState, useEffect } from 'react';
+import { api } from '@services/api';
+import { useAuthStore } from '@stores/index';
 
 export const CommanderDashboardPage: React.FC = () => {
-  const [selectedMetric, setSelectedMetric] = useState<'competencies' | 'training' | 'duties'>('competencies');
+  const { user } = useAuthStore();
+  const [unit, setUnit] = useState<any>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, onConfirm?: () => void} | null>(null);
 
-  const unitStats = {
-    totalSoldiers: 45,
-    completedTraining: 28,
-    averageScore: 82,
-    dutiesAssigned: 15,
-    onLeave: 3,
-    onMedical: 2,
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const uRes = await api.get('/units/my');
+        const myUnit = uRes.data?.data;
+        if (myUnit) {
+          setUnit(myUnit);
+          const [mRes, aRes] = await Promise.all([
+            api.get(`/units/${myUnit.id}/members`),
+            api.get(`/units/${myUnit.id}/analytics`)
+          ]);
+          setMembers(mRes.data?.data || []);
+          setAnalytics(aRes.data?.data || null);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, []);
+
+  const handleRemoveUser = (userId: string, userName: string) => {
+    setModal({
+      isOpen: true,
+      title: 'ВІДСТОРОНЕННЯ БІЙЦЯ',
+      message: `ВИ ДІЙСНО БАЖАЄТЕ ВІДСТОРОНИТИ ${userName.toUpperCase()} ВІД ПІДРОЗДІЛУ? ВІН ВТРАТИТЬ ДОСТУП ДО ЧАТУ ТА РОЗПОРЯДКУ.`,
+      onConfirm: async () => {
+        try {
+          await api.post(`/units/${unit.id}/remove-user`, { userId });
+          setMembers(members.filter(m => m.id !== userId));
+          setModal(null);
+        } catch (e: any) {
+          alert(e.response?.data?.error || 'Помилка відсторонення');
+        }
+      }
+    });
   };
 
-  const competencyMatrix: Soldier[] = [
-    { name: 'Петренко О.В.', rank: 'Сержант', tacticalMed: 85, weapons: 92, topography: 76, leadership: 88, completedModules: 12, totalModules: 15 },
-    { name: 'Іваненко І.П.', rank: 'Боєць', tacticalMed: 72, weapons: 80, topography: 65, leadership: 70, completedModules: 9, totalModules: 15 },
-    { name: 'Миколенко М.С.', rank: 'Боєць', tacticalMed: 88, weapons: 85, topography: 82, leadership: 79, completedModules: 13, totalModules: 15 },
-    { name: 'Андрієнко А.О.', rank: 'Боєць', tacticalMed: 65, weapons: 70, topography: 58, leadership: 62, completedModules: 7, totalModules: 15 },
-    { name: 'Сергієнко С.М.', rank: 'Боєць', tacticalMed: 91, weapons: 88, topography: 89, leadership: 85, completedModules: 14, totalModules: 15 },
-  ];
-
-  const trainingProgress = [
-    { module: 'Тактична медицина', completed: 28, total: 45, percentage: 62 },
-    { module: 'Озброєння та стрільба', completed: 35, total: 45, percentage: 78 },
-    { module: 'Топографія та навігація', completed: 22, total: 45, percentage: 49 },
-    { module: 'Радіозвʼязок', completed: 40, total: 45, percentage: 89 },
-    { module: 'Виживання в польових умовах', completed: 18, total: 45, percentage: 40 },
-  ];
-
-  const dutySchedule = [
-    { date: '2026-04-05', duty: 'Чергування на КПП', soldiers: 8, commander: 'Петренко О.В.', status: 'completed' as const },
-    { date: '2026-04-06', duty: 'Патруль периметру', soldiers: 6, commander: 'Сергієнко С.М.', status: 'ongoing' as const },
-    { date: '2026-04-07', duty: 'Моніторинг звʼязку', soldiers: 4, commander: 'Петренко О.В.', status: 'scheduled' as const },
-    { date: '2026-04-08', duty: 'Охорона складу', soldiers: 5, commander: 'Миколенко М.С.', status: 'scheduled' as const },
-  ];
-
-  const getAverageScore = (soldier: Soldier): number => {
-    return Math.round((soldier.tacticalMed + soldier.weapons + soldier.topography + soldier.leadership) / 4);
+  const handleExportCSV = () => {
+    const headers = ['Звання', 'ПІБ', 'Посада', 'Пройдено модулів', 'Боєготовність (%)', 'Остання активність'];
+    const rows = filteredMembers.map(m => [
+      m.rank || 'Солдат',
+      `${m.lastName || ''} ${m.firstName || ''}`.trim(),
+      m.position || 'Стрілець',
+      m.completedModules || 0,
+      Math.round(m.avgSimScore || 0),
+      m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleDateString('uk-UA') : 'Ніколи'
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(';'), ...rows.map(e => e.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Особовий_Склад_${unit?.name?.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed': return <span className="badge badge-success">Виконано</span>;
-      case 'ongoing': return <span className="badge badge-warning">Триває</span>;
-      case 'scheduled': return <span className="badge badge-gold">Заплановано</span>;
-      default: return null;
-    }
+  const getStatusIndicator = (lastLoginAt: string) => {
+    if (!lastLoginAt) return <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_5px_red]" title="Ніколи не був у системі"></span>;
+    const days = (new Date().getTime() - new Date(lastLoginAt).getTime()) / (1000 * 3600 * 24);
+    if (days < 1) return <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_5px_green] animate-pulse" title="Активний сьогодні"></span>;
+    if (days < 7) return <span className="w-2 h-2 rounded-full bg-[var(--ab3-gold)] shadow-[0_0_5px_var(--ab3-gold)]" title="Був у системі цього тижня"></span>;
+    return <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_5px_red]" title="Неактивний більше тижня"></span>;
   };
 
-  const tabs = [
-    { id: 'competencies' as const, label: 'Матриця компетенцій', icon: '📈' },
-    { id: 'training' as const, label: 'Прогрес навчання', icon: '📚' },
-    { id: 'duties' as const, label: 'Графік нарядів', icon: '📋' },
-  ];
+  const filteredMembers = members.filter(m => 
+    `${m.lastName} ${m.firstName} ${m.rank} ${m.position}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="relative w-24 h-24 mb-8">
+          <div className="absolute inset-0 border-4 border-[#333] rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-t-[var(--ab3-gold)] border-r-[var(--ab3-gold)] rounded-full animate-spin"></div>
+        </div>
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest text-[var(--ab3-gold)] glitch-hover">
+          СИНХРОНІЗАЦІЯ ДАНИХ ШТАБУ...
+        </h2>
+      </div>
+    );
+  }
+
+  if (!unit) {
+    return (
+      <div className="p-16 bg-[#0a0a0a] border border-[#333] text-center shadow-[8px_8px_0_0_#111] max-w-3xl mx-auto mt-10">
+        <div className="text-red-500 text-6xl mb-6">⚠️</div>
+        <h2 className="text-2xl font-black text-white uppercase tracking-widest font-heading mb-4">Підрозділ не знайдено</h2>
+        <p className="text-gray-400 font-mono text-sm uppercase tracking-widest leading-relaxed">
+          Для доступу до аналітики командира необхідно створити новий або приєднатися до існуючого підрозділу через меню "Мій Підрозділ".
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="animate-fade-in-up">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-          📊 Панель Командира
+    <div className="animate-fade-in-up max-w-7xl mx-auto pb-12">
+      <div className="mb-10">
+        <h1 className="text-4xl font-heading font-black uppercase tracking-widest mb-2 text-[var(--ab3-gold)] glitch-hover cursor-default">
+          ПАНЕЛЬ КОМАНДИРА
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-          Аналітика підрозділу, управління навчанням та розпорядком
+        <p className="font-mono text-xs uppercase tracking-widest text-gray-500">
+          // АНАЛІТИКА ТА БОЙОВА ГОТОВНІСТЬ: {unit.name} //
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        {[
-          { label: 'Всього бійців', value: unitStats.totalSoldiers, icon: '👥', color: '#c9a227' },
-          { label: 'Завершили навчання', value: unitStats.completedTraining, icon: '✅', color: '#22c55e' },
-          { label: 'Середній бал', value: `${unitStats.averageScore}%`, icon: '📈', color: '#3b82f6' },
-          { label: 'Нарядів активно', value: unitStats.dutiesAssigned, icon: '📋', color: '#f59e0b' },
-          { label: 'У відпустці', value: unitStats.onLeave, icon: '🏖', color: '#06b6d4' },
-          { label: 'На медогляді', value: unitStats.onMedical, icon: '🏥', color: '#ec4899' },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className="glass-card p-5 animate-scale-in"
-            style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{stat.icon}</span>
-              <div>
-                <p className="text-sm mb-1" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{stat.label}</p>
-                <p className="text-2xl font-heading font-black" style={{ color: stat.color, fontSize: '24px', lineHeight: '1.1' }}>{stat.value}</p>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="p-6 bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] shadow-[4px_4px_0_0_#111] hover:-translate-y-1 transition-transform">
+          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Особовий склад</p>
+          <div className="flex items-end gap-4">
+            <p className="text-5xl font-black text-white leading-none">{analytics?.totalMembers || members.length}</p>
+            <p className="text-xs font-mono text-[var(--ab3-gold)] mb-1">БІЙЦІВ</p>
+          </div>
+        </div>
+        
+        <div className="p-6 bg-[#0a0a0a] border border-[#333] border-l-4 border-l-blue-500 shadow-[4px_4px_0_0_#111] hover:-translate-y-1 transition-transform">
+          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Пройдено симуляцій</p>
+          <div className="flex items-end gap-4">
+            <p className="text-5xl font-black text-blue-400 leading-none">{analytics?.completedSims || 0}</p>
+            <p className="text-xs font-mono text-blue-500 mb-1">РАЗІВ</p>
+          </div>
+        </div>
+        
+        <div className="p-6 bg-[#0a0a0a] border border-[#333] border-l-4 border-l-green-500 shadow-[4px_4px_0_0_#111] hover:-translate-y-1 transition-transform">
+          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Бойова готовність (Сер. бал)</p>
+          <div className="flex items-end gap-4">
+            <p className="text-5xl font-black text-green-400 leading-none">{analytics?.avgScore || 0}%</p>
+            <p className="text-xs font-mono text-green-500 mb-1">ТОЧНІСТЬ</p>
+          </div>
+        </div>
+        
+        <div className="p-6 bg-[#0a0a0a] border border-[#333] border-l-4 border-l-red-500 shadow-[4px_4px_0_0_#111] hover:-translate-y-1 transition-transform">
+          <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Психологічна загроза</p>
+          <div className="flex items-end gap-4">
+            <p className="text-5xl font-black text-red-500 leading-none">{analytics?.criticalPsych || 0}</p>
+            <p className="text-xs font-mono text-red-500 mb-1">КРИТИЧНИХ ЗАПИТІВ</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Members Table */}
+      <div className="bg-[#050505] border border-[#333] shadow-[8px_8px_0_0_#111]">
+        <div className="p-5 border-b border-[#333] bg-[#111] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h3 className="font-heading font-black text-white uppercase tracking-widest text-sm">РЕЄСТР ОСОБОВОГО СКЛАДУ</h3>
+          <div className="flex gap-3 w-full md:w-auto">
+            <div className="flex border border-[#333] bg-black focus-within:border-[var(--ab3-gold)] transition-colors w-full md:w-64">
+              <span className="flex items-center pl-3 text-gray-500 font-mono">&gt;</span>
+              <input 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+                placeholder="ПОШУК БІЙЦЯ..." 
+                className="w-full bg-transparent text-xs px-2 py-2 text-white outline-none placeholder-gray-700 font-mono uppercase tracking-widest" 
+              />
+            </div>
+            <button onClick={handleExportCSV} className="bg-[#222] hover:bg-[var(--ab3-gold)] hover:text-black text-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest transition-colors flex-shrink-0">
+              ЕКСПОРТ CSV
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-[#222] bg-[#0a0a0a]">
+                <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal whitespace-nowrap">Статус / Звання</th>
+                <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal whitespace-nowrap">ПІБ</th>
+                <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal whitespace-nowrap">Посада</th>
+                <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal whitespace-nowrap text-center">Навчання</th>
+                <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal whitespace-nowrap text-center">Боєготовність</th>
+                <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal whitespace-nowrap text-right">Управління</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMembers.map(m => {
+                const simScore = Math.round(parseFloat(m.avgSimScore || '0'));
+                const readinessColor = simScore >= 80 ? 'text-green-400 bg-green-900/20 border-green-900' : simScore >= 50 ? 'text-[var(--ab3-gold)] bg-yellow-900/20 border-yellow-900' : 'text-red-400 bg-red-900/20 border-red-900';
+                
+                return (
+                <tr key={m.id} className="border-b border-[#111] hover:bg-[#111] transition-colors group">
+                  <td className="p-4 flex items-center gap-3">
+                    {getStatusIndicator(m.lastLoginAt)}
+                    <span className="text-[var(--ab3-gold)] font-bold font-heading text-sm uppercase tracking-widest">{m.rank || 'СОЛДАТ'}</span>
+                  </td>
+                  <td className="p-4 text-white font-bold tracking-wide whitespace-nowrap">{m.lastName} {m.firstName}</td>
+                  <td className="p-4 text-gray-400 text-xs font-mono tracking-widest uppercase">{m.position || 'СТРІЛЕЦЬ'}</td>
+                  <td className="p-4 text-center">
+                    <span className="text-xs font-mono text-gray-300 bg-black border border-[#333] px-3 py-1">{m.completedModules || 0} КУРСІВ</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`text-xs font-mono font-bold border px-3 py-1 ${readinessColor}`}>{simScore}%</span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => handleRemoveUser(m.id, `${m.lastName} ${m.firstName}`)} className="text-[10px] font-mono text-gray-500 hover:text-red-500 uppercase tracking-widest transition-colors px-2 py-1 border border-transparent hover:border-red-900/50 bg-transparent hover:bg-red-900/20">
+                      ВІДСТОРОНИТИ
+                    </button>
+                  </td>
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {filteredMembers.length === 0 && (
+            <div className="p-10 text-center font-mono text-gray-500 text-xs uppercase tracking-widest">Бійців не знайдено</div>
+          )}
+        </div>
+      </div>
+
+      {/* TACTICAL MODAL */}
+      {modal?.isOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-red-500 p-8 max-w-md w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden font-mono">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500 opacity-10 blur-2xl pointer-events-none"></div>
+            <h3 className="text-xl font-black text-white uppercase tracking-widest mb-3 flex items-center gap-3">
+              <span className="text-red-500">!</span> {modal.title}
+            </h3>
+            <p className="text-xs text-gray-400 mb-8 leading-relaxed uppercase tracking-widest">{modal.message}</p>
+            <div className="flex gap-4">
+              {modal.onConfirm && <button onClick={modal.onConfirm} className="w-full bg-red-900/30 border border-red-900 text-red-500 font-bold uppercase tracking-widest px-4 py-3 hover:bg-red-600 hover:text-white transition-colors">ПІДТВЕРДИТИ</button>}
+              <button onClick={() => setModal(null)} className="w-full bg-[#111] border border-[#333] text-white font-bold uppercase tracking-widest px-4 py-3 hover:bg-[#222] transition-colors">СКАСУВАТИ</button>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Tab Navigation */}
-      <div
-        className="p-3 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.3s', animationFillMode: 'both' }}
-      >
-        <div className="flex gap-2 flex-wrap">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedMetric(tab.id)}
-              className="btn"
-              style={{
-                background: selectedMetric === tab.id ? 'var(--gradient-gold)' : 'transparent',
-                color: selectedMetric === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
-                border: `1px solid ${selectedMetric === tab.id ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,
-                padding: '10px 18px',
-                fontSize: '13px',
-              }}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Competency Matrix */}
-      {selectedMetric === 'competencies' && (
-        <div
-          className="rounded-2xl overflow-hidden animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
-        >
-          <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-            <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
-              📈 Матриця компетенцій особового складу
-            </h2>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  {['Бієць', 'Тактична медицина', 'Озброєння', 'Топографія', 'Лідерство', 'Навчання', 'Загальний бал'].map((h) => (
-                    <th key={h} style={{ color: 'var(--text-muted)', fontSize: '12px', padding: '14px 18px', textAlign: 'left' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {competencyMatrix.map((soldier) => {
-                  const avg = getAverageScore(soldier);
-                  return (
-                    <tr key={soldier.name} style={{ transition: 'background 0.25s ease' }}>
-                      <td style={{ padding: '14px 18px' }}>
-                        <p className="font-semibold" style={{ color: 'var(--text-primary)', fontSize: '14px' }}>
-                          {soldier.rank} {soldier.name}
-                        </p>
-                      </td>
-                      {[soldier.tacticalMed, soldier.weapons, soldier.topography, soldier.leadership].map((score, i) => (
-                        <td key={i} style={{ padding: '14px 18px' }}>
-                          <div className="flex items-center gap-2">
-                            <div className="rounded-full h-2 overflow-hidden flex-1" style={{ background: 'var(--ab3-gray-800)' }}>
-                              <div className="h-full rounded-full" style={{
-                                width: `${score}%`,
-                                background: score >= 85 ? 'var(--ab3-green)' : score >= 75 ? 'var(--ab3-amber)' : 'var(--ab3-red)',
-                              }} />
-                            </div>
-                            <span className="text-xs font-mono flex-shrink-0" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{score}%</span>
-                          </div>
-                        </td>
-                      ))}
-                      <td style={{ padding: '14px 18px', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                        {soldier.completedModules}/{soldier.totalModules}
-                      </td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span className={`badge ${avg >= 85 ? 'badge-success' : avg >= 75 ? 'badge-gold' : 'badge-danger'}`}>
-                          {avg}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
-
-      {/* Training Progress */}
-      {selectedMetric === 'training' && (
-        <div
-          className="p-6 rounded-2xl animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
-        >
-          <h2 className="text-xl font-heading font-bold mb-6" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
-            📚 Прогрес навчання підрозділу
-          </h2>
-
-          <div className="space-y-6">
-            {trainingProgress.map((module, index) => (
-              <div key={module.module} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.08}s`, animationFillMode: 'both' }}>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold" style={{ color: 'var(--text-primary)', fontSize: '15px' }}>
-                    {module.module}
-                  </span>
-                  <span className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    {module.completed}/{module.total} ({module.percentage}%)
-                  </span>
-                </div>
-                <div className="w-full rounded-full h-3 overflow-hidden" style={{ background: 'var(--ab3-gray-800)' }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${module.percentage}%`,
-                      background: module.percentage >= 80 ? 'var(--ab3-green)' : module.percentage >= 50 ? 'var(--ab3-amber)' : 'var(--ab3-red)',
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Duty Schedule */}
-      {selectedMetric === 'duties' && (
-        <div
-          className="rounded-2xl overflow-hidden animate-fade-in-up"
-          style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.35s', animationFillMode: 'both' }}
-        >
-          <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: 'var(--border-subtle)' }}>
-            <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
-              📋 Графік нарядів
-            </h2>
-            <button className="btn btn-primary" style={{ padding: '10px 18px', fontSize: '13px' }}>
-              + Додати наряд
-            </button>
-          </div>
-
-          <div className="divide-y" style={{ borderColor: 'var(--border-subtle)' }}>
-            {dutySchedule.map((duty, index) => (
-              <div
-                key={duty.date}
-                className="p-6 transition-colors duration-200 animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.08}s`, animationFillMode: 'both' }}
-              >
-                <div className="flex justify-between items-start flex-wrap gap-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <p className="font-bold text-lg" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>
-                        {duty.duty}
-                      </p>
-                      {getStatusBadge(duty.status)}
-                    </div>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                      📅 {new Date(duty.date).toLocaleDateString('uk-UA')} |
-                      👥 {duty.soldiers} бійців |
-                      🎖️ {duty.commander}
-                    </p>
-                  </div>
-                  <button className="btn" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '8px 14px', fontSize: '12px' }}>
-                    ✏️ Редагувати
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recommendations */}
-      <div
-        className="p-6 rounded-2xl mt-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', borderLeft: '4px solid var(--ab3-amber)', animationDelay: '0.4s', animationFillMode: 'both' }}
-      >
-        <h3 className="text-xl font-heading font-bold mb-4" style={{ color: 'var(--ab3-amber)', fontSize: '20px' }}>
-          💡 Рекомендації системи
-        </h3>
-        <ul className="space-y-3">
-          {[
-            { icon: '⚠️', text: 'Андрієнко А.О. потребує допомоги з топографії (58%) — рекомендується додаткове індивідуальне заняття' },
-            { icon: '✅', text: 'Висока готовність підрозділу з радіозвʼязку (89%) — можна переходити до наступного модуля' },
-            { icon: '📅', text: 'Чергування на 7 квітня потребує підтвердження від Петренка О.В.' },
-            { icon: '🎓', text: '3 бійці готові до складання підсумкового іспиту — рекомендується призначити дату' },
-          ].map((rec, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="text-xl flex-shrink-0">{rec.icon}</span>
-              <span style={{ color: 'var(--text-primary)', fontSize: '14px', lineHeight: '1.6' }}>{rec.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 };

@@ -1,85 +1,52 @@
 import { Router } from 'express';
-import { EquipmentController } from '../controllers/EquipmentController';
-import { authMiddleware } from '../middleware/auth';
+import { AppDataSource } from '../config/database';
+import { sendSuccess, sendError } from '../utils/response';
+import * as crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 
-/**
- * POST /api/equipment/add
- * Add new equipment
- */
-router.post('/add', authMiddleware, EquipmentController.addEquipment);
+const getUserId = (req: any) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) throw new Error('Unauthorized');
+  const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+  return String(decoded.userId || decoded.id || decoded.tempId);
+};
 
-/**
- * GET /api/equipment/my
- * Get user's equipment
- */
-router.get('/my', authMiddleware, EquipmentController.getUserEquipment);
+const ensureTable = async () => {
+  await AppDataSource.query(`
+    CREATE TABLE IF NOT EXISTS "user_equipment" (
+      "id" varchar PRIMARY KEY,
+      "userId" varchar NOT NULL,
+      "name" varchar NOT NULL,
+      "category" varchar NOT NULL,
+      "weight" float DEFAULT 0,
+      "type" varchar DEFAULT 'personal',
+      "cost" float DEFAULT 0,
+      "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+    )
+  `).catch(() => {});
+};
 
-/**
- * GET /api/equipment/type/:type
- * Get equipment by type (issued/personal/recommended)
- */
-router.get('/type/:type', authMiddleware, EquipmentController.getByType);
+router.get('/', async (req, res) => {
+  try {
+    await ensureTable();
+    const items = await AppDataSource.query('SELECT * FROM "user_equipment" WHERE "userId" = ? ORDER BY "createdAt" DESC', [getUserId(req)]);
+    sendSuccess(res, items);
+  } catch (e) { sendError(res, 'Помилка', 500); }
+});
 
-/**
- * GET /api/equipment/category/:category
- * Get equipment by category
- */
-router.get('/category/:category', authMiddleware, EquipmentController.getByCategory);
+router.post('/', async (req, res) => {
+  try {
+    await ensureTable();
+    const { name, category, weight, type, cost } = req.body;
+    const id = crypto.randomUUID();
+    await AppDataSource.query('INSERT INTO "user_equipment" ("id", "userId", "name", "category", "weight", "type", "cost") VALUES (?, ?, ?, ?, ?, ?, ?)', [id, getUserId(req), name, category, weight || 0, type, cost || 0]);
+    sendSuccess(res, { id });
+  } catch (e) { sendError(res, 'Помилка', 500); }
+});
 
-/**
- * GET /api/equipment/stats
- * Get equipment statistics
- */
-router.get('/stats', authMiddleware, EquipmentController.getStats);
-
-/**
- * GET /api/equipment/search
- * Search equipment
- */
-router.get('/search', authMiddleware, EquipmentController.search);
-
-/**
- * GET /api/equipment/recommendations
- * Get equipment recommendations
- */
-router.get('/recommendations', authMiddleware, EquipmentController.getRecommendations);
-
-/**
- * GET /api/equipment/weight
- * Get total equipment weight
- */
-router.get('/weight', authMiddleware, EquipmentController.getTotalWeight);
-
-/**
- * GET /api/equipment/cost
- * Get total equipment cost
- */
-router.get('/cost', authMiddleware, EquipmentController.getTotalCost);
-
-/**
- * GET /api/equipment/expiring
- * Check expiring equipment
- */
-router.get('/expiring', authMiddleware, EquipmentController.checkExpiring);
-
-/**
- * GET /api/equipment/categories
- * Get available categories
- */
-router.get('/categories', authMiddleware, EquipmentController.getCategories);
-
-/**
- * PUT /api/equipment/:id
- * Update equipment
- */
-router.put('/:id', authMiddleware, EquipmentController.updateEquipment);
-
-/**
- * DELETE /api/equipment/:id
- * Delete equipment
- */
-router.delete('/:id', authMiddleware, EquipmentController.deleteEquipment);
-
+router.delete('/:id', async (req, res) => {
+  try { await AppDataSource.query('DELETE FROM "user_equipment" WHERE id = ? AND "userId" = ?', [req.params.id, getUserId(req)]); sendSuccess(res, null); } catch (e) { sendError(res, 'Помилка', 500); }
+});
 export default router;

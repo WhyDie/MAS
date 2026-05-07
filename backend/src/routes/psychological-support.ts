@@ -1,182 +1,252 @@
-import express from 'express';
-import { PsychologicalSupportController } from '../controllers/PsychologicalSupportController';
-import { authMiddleware } from '../middleware/auth';
+import { Router } from 'express';
+import { AppDataSource } from '../config/database';
+import { sendSuccess, sendError } from '../utils/response';
+import jwt from 'jsonwebtoken';
+import * as crypto from 'crypto';
 
-const router = express.Router();
+const router = Router();
 
-// All routes require authentication
-router.use(authMiddleware);
+const getUserId = (req: any) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) throw new Error('Unauthorized');
+  const token = authHeader.split(' ')[1];
+  const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+  return String(decoded.userId || decoded.id || decoded.tempId);
+};
 
-/**
- * Create new support request
- * POST /api/psychological-support/request
- * Body: { message, contactType?, severity, keywords? }
- * Returns: PsychologicalSupport object
- */
-router.post('/request', PsychologicalSupportController.createRequest);
-
-/**
- * Get my requests
- * GET /api/psychological-support/my-requests?status=pending
- * Query: status? (pending | in_progress | responded | escalated | resolved)
- * Returns: PsychologicalSupport[]
- */
-router.get('/my-requests', PsychologicalSupportController.getUserRequests);
-
-/**
- * Get pending requests (psychologist only)
- * GET /api/psychological-support/pending
- * Query: limit? (default 20)
- * Returns: PsychologicalSupport[]
- * Access: PSYCHOLOGIST role
- */
-router.get('/pending', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+// Отримати всі психологічні запити (для психолога)
+router.get('/requests', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const requests = await AppDataSource.query(`SELECT p.* FROM "psychological_support" p JOIN "users" u ON p."userId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`, [userId]);
+    sendSuccess(res, requests);
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
   }
-  next();
-}, PsychologicalSupportController.getPendingRequests);
+});
 
-/**
- * Get critical requests
- * GET /api/psychological-support/critical
- * Returns: PsychologicalSupport[] (only critical severity)
- * Access: PSYCHOLOGIST role
- */
-router.get('/critical', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+// Отримати всі запити системи
+router.get('/all-requests', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const rows = await AppDataSource.query(`SELECT p.*, u."firstName", u."lastName", u."rank" FROM "psychological_support" p LEFT JOIN "users" u ON p."userId" = u."id" WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`, [userId]);
+    sendSuccess(res, rows.map((r: any) => ({ ...r, user: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })));
+  } catch (e) { 
+    sendError(res, 'Помилка сервера', 500); 
   }
-  next();
-}, PsychologicalSupportController.getCriticalRequests);
+});
 
-/**
- * Get anonymous requests (psychologist)
- * GET /api/psychological-support/anonymous
- * Query: limit? (default 10)
- * Returns: PsychologicalSupport[] (without userId)
- * Access: PSYCHOLOGIST role
- */
-router.get('/anonymous', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+// Оновити статус запиту (для психолога)
+router.put('/requests/:id/status', async (req, res) => {
+  try {
+    const { status, response } = req.body;
+    await AppDataSource.query(
+      'UPDATE "psychological_support" SET "status" = ?, "response" = ?, "respondedAt" = CURRENT_TIMESTAMP WHERE "id" = ?',
+      [status, response || null, req.params.id]
+    );
+    sendSuccess(res, null, 'Оновлено');
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
   }
-  next();
-}, PsychologicalSupportController.getAnonymousRequests);
+});
 
-/**
- * Get audio recommendations
- * GET /api/psychological-support/audio?severity=low
- * Query: severity? (low | medium | high | critical)
- * Returns: { audioTracks: AudioTrack[] }
- */
-router.get('/audio', PsychologicalSupportController.getAudioRecommendations);
+// Отримати аналітику настрою
+router.get('/analytics', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const stats = { totalPolled: 0, good: 0, normal: 0, stressed: 0, critical: 0 };
+    const requests = await AppDataSource.query(`SELECT p.* FROM "psychological_support" p JOIN "users" u ON p."userId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?)`, [userId]);
+    
+    stats.totalPolled = requests.length;
+    requests.forEach((r: any) => {
+      const sev = String(r.severity || r.topic || '').toLowerCase();
+      if (sev.includes('низьк') || sev.includes('low') || sev.includes('добр')) stats.good++;
+      else if (sev.includes('середн') || sev.includes('medium') || sev.includes('норм')) stats.normal++;
+      else if (sev.includes('висок') || sev.includes('high') || sev.includes('стрес')) stats.stressed++;
+      else if (sev.includes('критич') || sev.includes('critical') || sev.includes('птср')) stats.critical++;
+      else stats.normal++; // default fallback
+    });
 
-/**
- * Get support statistics
- * GET /api/psychological-support/stats
- * Returns: { total, byStatus: {}, bySeverity: {}, averageResolutionTime }
- * Access: PSYCHOLOGIST role
- */
-router.get('/stats', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+    sendSuccess(res, stats);
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
   }
-  next();
-}, PsychologicalSupportController.getStats);
+});
 
-/**
- * Get trend analysis
- * GET /api/psychological-support/trends?days=30
- * Query: days? (default 30)
- * Returns: { period, moodTrend: [], requestTrend: [], criticalCount }
- */
-router.get('/trends', PsychologicalSupportController.getTrendAnalysis);
+// Створити запит на психологічну підтримку (для бійця)
+const createRequest = async (req: any, res: any) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const userId = String(decoded.userId || decoded.id || decoded.tempId);
 
-/**
- * Search requests by keywords
- * GET /api/psychological-support/search?keywords=stress,sleep
- * Query: keywords (comma-separated)
- * Returns: PsychologicalSupport[] (matching requests)
- */
-router.get('/search', PsychologicalSupportController.searchByKeywords);
+    const message = req.body.message || req.body.description || req.body.text || 'Потребую психологічної підтримки';
+    const contactType = req.body.contactType || 'anonymous';
+    const severity = req.body.severity || 'medium';
+    const status = req.body.status || 'pending';
+    const isEscalated = req.body.isEscalated || false;
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
 
-/**
- * Get requests by severity
- * GET /api/psychological-support/severity/:severity
- * Params: severity (low | medium | high | critical)
- * Returns: PsychologicalSupport[] (filtered by severity)
- * Access: PSYCHOLOGIST role
- */
-router.get('/severity/:severity', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+    // Ensure table exists with all columns
+    try {
+      await AppDataSource.query(`
+        CREATE TABLE IF NOT EXISTS "psychological_support" (
+          "id" varchar PRIMARY KEY,
+          "userId" varchar,
+          "message" text,
+          "contactType" varchar DEFAULT 'anonymous',
+          "psychologistId" varchar,
+          "response" text,
+          "respondedAt" datetime,
+          "respondedByUserId" varchar,
+          "status" varchar DEFAULT 'pending',
+          "severity" varchar DEFAULT 'medium',
+          "keywords" text,
+          "isEscalated" boolean DEFAULT 0,
+          "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+        )
+      `).catch(() => {});
+    } catch(e) { console.error('Create table error:', e); }
+
+    // Add missing columns if they don't exist
+    const columnsToAdd = [
+      { name: 'message', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "message" text' },
+      { name: 'contactType', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "contactType" varchar DEFAULT \'anonymous\'' },
+      { name: 'severity', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "severity" varchar DEFAULT \'medium\'' },
+      { name: 'isEscalated', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "isEscalated" boolean DEFAULT 0' },
+    ];
+    
+    for (const col of columnsToAdd) {
+      try {
+        await AppDataSource.query(col.sql).catch(() => {});
+      } catch(e) {}
+    }
+
+    await AppDataSource.query(
+      'INSERT INTO "psychological_support" ("id", "userId", "message", "contactType", "severity", "status", "isEscalated", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, userId, message, contactType, severity, status, isEscalated ? 1 : 0, createdAt, createdAt]
+    );
+
+    const saved = await AppDataSource.query('SELECT * FROM "psychological_support" WHERE id = ?', [id]);
+    sendSuccess(res, saved[0], 'Запит створено', 201);
+  } catch (error) {
+    console.error('Psych request err:', error);
+    sendError(res, 'Помилка створення запиту', 500);
   }
-  next();
-}, PsychologicalSupportController.getRequestsBySeverity);
+};
 
-/**
- * Get single request (with privacy checks)
- * GET /api/psychological-support/:id
- * Returns: PsychologicalSupport (may hide userId if anonymous)
- */
-router.get('/:id', PsychologicalSupportController.getRequest);
+router.post('/requests', createRequest);
+router.post('/request', createRequest);
 
-/**
- * Log mood check-in
- * POST /api/psychological-support/mood
- * Body: { mood: 1-10, notes? }
- * Returns: { moodLog entry }
- */
-router.post('/mood', PsychologicalSupportController.logMood);
+// Отримати мої запити на психологічну підтримку
+router.get('/user/requests', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const userId = String(decoded.userId || decoded.id || decoded.tempId);
 
-/**
- * Respond to support request
- * POST /api/psychological-support/:id/respond
- * Body: { response: string }
- * Returns: PsychologicalSupport (updated with response)
- * Access: PSYCHOLOGIST role
- */
-router.post('/:id/respond', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+    const requests = await AppDataSource.query(
+      `SELECT * FROM "psychological_support" WHERE "userId" = ? ORDER BY "createdAt" DESC`,
+      [userId]
+    );
+
+    sendSuccess(res, requests);
+  } catch (error) {
+    sendError(res, 'Помилка при завантаженні запитів', 500);
   }
-  next();
-}, PsychologicalSupportController.respondToRequest);
+});
 
-/**
- * Escalate support request
- * POST /api/psychological-support/:id/escalate
- * Body: { reason: string }
- * Returns: PsychologicalSupport (status: escalated)
- * Access: PSYCHOLOGIST role
- */
-router.post('/:id/escalate', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-  next();
-}, PsychologicalSupportController.escalateRequest);
+// Alias for frontend compatibility
+router.get('/my-requests', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const userId = String(decoded.userId || decoded.id || decoded.tempId);
 
-/**
- * Resolve support request
- * POST /api/psychological-support/:id/resolve
- * Returns: PsychologicalSupport (status: resolved)
- * Access: PSYCHOLOGIST role
- */
-router.post('/:id/resolve', (req, res, next) => {
-  const userRole = req.user!.role;
-  if (userRole !== 'psychologist' && userRole !== 'admin' && userRole !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden' });
+    const requests = await AppDataSource.query(
+      `SELECT * FROM "psychological_support" WHERE "userId" = ? ORDER BY "createdAt" DESC`,
+      [userId]
+    );
+
+    sendSuccess(res, requests);
+  } catch (error) {
+    sendError(res, 'Помилка при завантаженні запитів', 500);
   }
-  next();
-}, PsychologicalSupportController.resolveRequest);
+});
+
+// Зберегти настрій
+router.post('/mood', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { mood, notes } = req.body;
+    
+    if (typeof mood !== 'number' || mood < 1 || mood > 10) {
+      return sendError(res, 'Невірне значення настрою', 400);
+    }
+
+    await AppDataSource.query(`
+      CREATE TABLE IF NOT EXISTS "mood_logs" (
+        "id" varchar PRIMARY KEY,
+        "userId" varchar NOT NULL,
+        "mood" integer NOT NULL,
+        "notes" text,
+        "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    await AppDataSource.query(
+      'INSERT INTO "mood_logs" ("id", "userId", "mood", "notes") VALUES (?, ?, ?, ?)',
+      [crypto.randomUUID(), userId, mood, notes || null]
+    );
+
+    sendSuccess(res, null, 'Настрій збережено');
+  } catch (error) {
+    sendError(res, 'Помилка збереження настрою', 500);
+  }
+});
+
+// Отримати тренди настрою
+router.get('/trends', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const days = parseInt(req.query.days as string) || 30;
+    
+    await AppDataSource.query(`
+      CREATE TABLE IF NOT EXISTS "mood_logs" (
+        "id" varchar PRIMARY KEY,
+        "userId" varchar NOT NULL,
+        "mood" integer NOT NULL,
+        "notes" text,
+        "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+      )
+    `).catch(() => {});
+
+    const logs = await AppDataSource.query(
+      `SELECT mood, notes, "createdAt" as timestamp 
+       FROM "mood_logs" 
+       WHERE "userId" = ? 
+       ORDER BY "createdAt" DESC 
+       LIMIT ?`,
+      [userId, days]
+    );
+
+    const formattedLogs = logs.map((log: any) => ({
+      ...log,
+      timestamp: new Date(log.timestamp).toLocaleDateString('uk-UA')
+    }));
+
+    sendSuccess(res, { moodTrend: formattedLogs });
+  } catch (error) {
+    sendError(res, 'Помилка отримання трендів', 500);
+  }
+});
 
 export default router;

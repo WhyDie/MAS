@@ -15,6 +15,12 @@ interface TrainingModule {
   contentParsed?: any;
 }
 
+export interface ContentBlock {
+  id: string;
+  type: 'text' | 'header' | 'info' | 'warning' | 'image' | 'video';
+  content: string;
+}
+
 const categories = [
   { value: 'Тактична Медицина', label: 'Тактична Медицина', icon: '🏥' },
   { value: 'Озброєння', label: 'Озброєння', icon: '🔫' },
@@ -80,16 +86,26 @@ export const TrainingAdminPage: React.FC = () => {
   const [showContentViewer, setShowContentViewer] = useState(false);
   const [viewingModule, setViewingModule] = useState<TrainingModule | null>(null);
   const [form, setForm] = useState(emptyModule);
+  const [formBlocks, setFormBlocks] = useState<ContentBlock[]>([]);
 
   useEffect(() => { loadModules(); }, []);
 
   const loadModules = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/training/modules');
-      const data = res.data.data || res.data || [];
-      const list = Array.isArray(data) ? data : data.data || [];
-      setModules(list.sort((a: TrainingModule, b: TrainingModule) => a.sortOrder - b.sortOrder));
+      const res = await api.get('/training/modules?limit=200');
+      
+      let list: any[] = [];
+      const d = res.data;
+      if (Array.isArray(d)) list = d;
+      else if (d?.data && Array.isArray(d.data)) list = d.data;
+      else if (d?.data?.data && Array.isArray(d.data.data)) list = d.data.data;
+      else if (d?.data?.items && Array.isArray(d.data.items)) list = d.data.items;
+      else if (d?.items && Array.isArray(d.items)) list = d.items;
+
+      const sorted = list.filter((m: any) => m.isActive !== false && m.isActive !== 0)
+        .sort((a: any, b: any) => (typeof a.sortOrder === 'number' ? a.sortOrder : 999) - (typeof b.sortOrder === 'number' ? b.sortOrder : 999));
+      setModules(sorted);
     } catch { setError('Не вдалося завантажити модулі'); }
     finally { setLoading(false); }
   };
@@ -109,14 +125,43 @@ export const TrainingAdminPage: React.FC = () => {
       try {
         const res = await api.get(`/training/modules/${mod.id}`);
         const fullData = res.data.data || res.data;
-        const contentText = typeof fullData.content === 'object' ? (fullData.content.text || '') : (fullData.content || '');
-        setForm({ title: fullData.title, description: fullData.description, category: fullData.category, difficulty: fullData.difficulty, durationMinutes: fullData.durationMinutes, tags: fullData.tags || '[]', content: contentText, isActive: fullData.isActive });
+        
+        let parsedBlocks: ContentBlock[] = [];
+        let contentText = '';
+        
+        if (typeof fullData.content === 'object' && fullData.content !== null) {
+          if (fullData.content.blocks) {
+            parsedBlocks = fullData.content.blocks;
+          } else {
+            contentText = fullData.content.text || JSON.stringify(fullData.content);
+            parsedBlocks = [{ id: Date.now().toString(), type: 'text', content: contentText }];
+          }
+        } else {
+          contentText = fullData.content || '';
+          try {
+            const parsed = JSON.parse(contentText);
+            if (parsed.blocks) {
+              parsedBlocks = parsed.blocks;
+            } else if (parsed.text) {
+              contentText = parsed.text;
+              parsedBlocks = [{ id: Date.now().toString(), type: 'text', content: contentText }];
+            } else {
+              parsedBlocks = [{ id: Date.now().toString(), type: 'text', content: contentText }];
+            }
+          } catch {
+            parsedBlocks = [{ id: Date.now().toString(), type: 'text', content: contentText }];
+          }
+        }
+        setFormBlocks(parsedBlocks);
+        setForm({ title: fullData.title, description: fullData.description, category: fullData.category, difficulty: fullData.difficulty, durationMinutes: fullData.durationMinutes, tags: typeof fullData.tags === 'object' ? JSON.stringify(fullData.tags) : (fullData.tags || '[]'), content: contentText, isActive: fullData.isActive });
       } catch {
+        setFormBlocks([{ id: Date.now().toString(), type: 'text', content: mod.content || '' }]);
         setForm({ title: mod.title, description: mod.description, category: mod.category, difficulty: mod.difficulty, durationMinutes: mod.durationMinutes, tags: mod.tags || '[]', content: '', isActive: mod.isActive });
       }
     } else {
       setEditingModule(null);
       setForm(emptyModule);
+      setFormBlocks([]);
     }
     setShowForm(true);
     setError(''); setSuccess('');
@@ -126,7 +171,13 @@ export const TrainingAdminPage: React.FC = () => {
     try {
       const res = await api.get(`/training/modules/${mod.id}`);
       const fullData = res.data.data || res.data;
-      setViewingModule({ ...mod, content: typeof fullData.content === 'object' ? (fullData.content.text || '') : (fullData.content || '') });
+      let finalContent = '';
+      if (typeof fullData.content === 'object' && fullData.content !== null) {
+         finalContent = JSON.stringify(fullData.content);
+      } else {
+         finalContent = fullData.content || '';
+      }
+      setViewingModule({ ...mod, content: finalContent });
     } catch {
       setViewingModule(mod);
     }
@@ -137,14 +188,24 @@ export const TrainingAdminPage: React.FC = () => {
     if (!form.title.trim()) { setError('Назва обовʼязкова'); return; }
     try {
       setLoading(true);
+
+      let parsedTags = form.tags;
+      if (typeof parsedTags === 'string') {
+        try {
+          parsedTags = JSON.parse(parsedTags);
+        } catch (e) {
+          parsedTags = parsedTags.split(',').map(t => t.trim()).filter(Boolean) as any;
+        }
+      }
+
       const data: any = {
         title: form.title,
         description: form.description,
         category: form.category,
         difficulty: form.difficulty,
         durationMinutes: form.durationMinutes,
-        tags: form.tags,
-        content: { text: form.content || '' },
+        tags: parsedTags,
+        content: JSON.stringify({ blocks: formBlocks }),
         isOfflineAvailable: true,
       };
       if (editingModule) {
@@ -166,7 +227,9 @@ export const TrainingAdminPage: React.FC = () => {
       await api.delete(`/training/modules/${id}`);
       setSuccess('Модуль видалено');
       loadModules();
-    } catch { setError('Не вдалося видалити'); }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Не вдалося видалити модуль (можливо він використовується)');
+    }
   };
 
   const dragIcon = (
@@ -180,51 +243,90 @@ export const TrainingAdminPage: React.FC = () => {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>⚙️ Управління модулями</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Додавання, редагування, видалення та сортування навчальних модулів</p>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>УПРАВЛІННЯ МОДУЛЯМИ</h1>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// БАЗА НАВЧАЛЬНИХ ПРОГРАМ //</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <div className="flex items-center gap-3"><span className="text-xl">⚠️</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{error}</span></div>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <div className="flex items-center gap-3"><span className="text-xl">✅</span><span style={{ fontSize: '15px', lineHeight: '1.5' }}>{success}</span></div>
         </div>
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>📚 Навчальні модулі</h2>
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>НАВЧАЛЬНІ МОДУЛІ</h2>
         <button onClick={() => openForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати модуль</button>
       </div>
 
+      {/* Form Modal */}
       {showForm && (
-        <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
-          <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingModule ? '✏️ Редагування' : '➕ Новий модуль'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Назва модуля" /></div>
-            <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Категорія</label>
-              <select className="input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}</select>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowForm(false)}>
+          <div className="bg-[#0a0a0a] border border-[#333] max-w-4xl w-full max-h-[90vh] flex flex-col animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-[#333] flex-shrink-0">
+              <h3 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>{editingModule ? '✏️ Редагування курсу' : '➕ Новий курс'}</h3>
             </div>
-            <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Складність</label>
-              <select className="input" value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}>{difficulties.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}</select>
+            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Назва модуля" /></div>
+                <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Категорія</label>
+                  <select className="input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}</select>
+                </div>
+                <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Складність</label>
+                  <select className="input" value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}>{difficulties.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}</select>
+                </div>
+                <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Тривалість (хв)</label><input type="number" className="input" value={form.durationMinutes} onChange={e => setForm({ ...form, durationMinutes: parseInt(e.target.value) || 0 })} min="1" /></div>
+              </div>
+              <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Опис</label><textarea className="input" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Опис модуля..." /></div>
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Структура курсу (Блоки)</label>
+                <div className="space-y-3 mb-3 p-3 border border-dashed border-[#333]">
+                  {formBlocks.map((block, i) => (
+                    <div key={block.id} className="p-3 bg-[#111] border border-[#333] flex flex-col gap-2 transition-all hover:border-[var(--ab3-gold)]">
+                      <div className="flex justify-between items-center">
+                        <select className="input py-1 px-2 h-auto text-xs w-auto border-[#333]" value={block.type} onChange={e => { const newB = [...formBlocks]; newB[i].type = e.target.value as any; setFormBlocks(newB); }}>
+                          <option value="text">📄 Текст</option>
+                          <option value="header">🔠 Заголовок</option>
+                          <option value="warning">⚠️ Увага (Червоний)</option>
+                          <option value="info">ℹ️ Довідка (Синій)</option>
+                          <option value="image">🖼️ Зображення (URL)</option>
+                          <option value="video">🎥 Відео (YouTube URL)</option>
+                        </select>
+                        <div className="flex gap-1">
+                          <button onClick={() => { if(i>0){ const b=[...formBlocks]; const temp=b[i]; b[i]=b[i-1]; b[i-1]=temp; setFormBlocks(b); } }} className="btn text-xs px-2 py-1" style={{ background: '#222', border: 'none' }}>↑</button>
+                          <button onClick={() => { if(i<formBlocks.length-1){ const b=[...formBlocks]; const temp=b[i]; b[i]=b[i+1]; b[i+1]=temp; setFormBlocks(b); } }} className="btn text-xs px-2 py-1" style={{ background: '#222', border: 'none' }}>↓</button>
+                          <button onClick={() => setFormBlocks(formBlocks.filter((_, idx) => idx !== i))} className="btn text-xs px-2 py-1" style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', marginLeft: '8px' }}>✕</button>
+                        </div>
+                      </div>
+                      <textarea className="input" rows={block.type === 'text' ? 4 : 2} value={block.content} onChange={e => { const newB = [...formBlocks]; newB[i].content = e.target.value; setFormBlocks(newB); }} placeholder={block.type === 'image' || block.type === 'video' ? 'Вставте URL посилання...' : 'Введіть текст блоку...'} />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setFormBlocks([...formBlocks, { id: Date.now().toString() + '1', type: 'text', content: '' }])} className="btn text-xs" style={{ background: '#111', border: '1px solid #333' }}>+ Текст</button>
+                  <button onClick={() => setFormBlocks([...formBlocks, { id: Date.now().toString() + '2', type: 'header', content: '' }])} className="btn text-xs" style={{ background: '#111', border: '1px solid #333' }}>+ Заголовок</button>
+                  <button onClick={() => setFormBlocks([...formBlocks, { id: Date.now().toString() + '3', type: 'warning', content: '' }])} className="btn text-xs" style={{ background: '#111', border: '1px solid #333' }}>+ Увага</button>
+                  <button onClick={() => setFormBlocks([...formBlocks, { id: Date.now().toString() + '4', type: 'info', content: '' }])} className="btn text-xs" style={{ background: '#111', border: '1px solid #333' }}>+ Довідка</button>
+                  <button onClick={() => setFormBlocks([...formBlocks, { id: Date.now().toString() + '5', type: 'image', content: '' }])} className="btn text-xs" style={{ background: '#111', border: '1px solid #333' }}>+ Фото</button>
+                  <button onClick={() => setFormBlocks([...formBlocks, { id: Date.now().toString() + '6', type: 'video', content: '' }])} className="btn text-xs" style={{ background: '#111', border: '1px solid #333' }}>+ Відео</button>
+                </div>
+              </div>
+              <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Теги (JSON масив)</label><input className="input" value={form.tags || '[]'} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder='["тег1", "тег2"]' /></div>
             </div>
-            <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Тривалість (хв)</label><input type="number" className="input" value={form.durationMinutes} onChange={e => setForm({ ...form, durationMinutes: parseInt(e.target.value) || 0 })} min="1" /></div>
-          </div>
-          <div className="mb-4"><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Опис</label><textarea className="input" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Опис модуля..." /></div>
-          <div className="mb-4"><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Зміст модуля</label><textarea className="input" rows={8} value={form.content || ''} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Повний зміст навчального модуля..." /></div>
-          <div className="mb-4"><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Теги (JSON масив)</label><input className="input" value={form.tags || '[]'} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder='["тег1", "тег2"]' /></div>
-          <div className="flex gap-3">
-            <button onClick={saveModule} disabled={loading} className="btn btn-primary disabled:opacity-50" style={{ padding: '12px 24px', fontSize: '14px' }}>{loading ? '⏳...' : '💾 Зберегти'}</button>
-            <button onClick={() => setShowForm(false)} className="btn" style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '12px 24px', fontSize: '14px' }}>Скасувати</button>
+            <div className="p-6 border-t border-[#333] flex justify-end gap-3 flex-shrink-0">
+              <button onClick={() => setShowForm(false)} className="btn" style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', padding: '12px 24px', fontSize: '14px' }}>Скасувати</button>
+              <button onClick={saveModule} disabled={loading} className="btn btn-primary disabled:opacity-50" style={{ padding: '12px 24px', fontSize: '14px' }}>{loading ? '⏳...' : '💾 Зберегти'}</button>
+            </div>
           </div>
         </div>
       )}
 
       {loading && !showForm ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
           <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
           <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
         </div>
@@ -237,7 +339,7 @@ export const TrainingAdminPage: React.FC = () => {
               const diff = difficulties.find(d => d.value === m.difficulty);
               return (
                 <div key={m.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop}
-                  className="military-card p-5 flex items-center gap-4 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-4 transition-all duration-300"
                   style={{ cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: isOver ? 'translateY(8px)' : 'none', boxShadow: isOver ? '0 -4px 0 0 var(--ab3-gold)' : 'none', borderLeft: `4px solid ${diff?.color || '#6b7280'}` }}>
                   <div className="flex-shrink-0">{dragIcon}</div>
                   <span className="text-2xl flex-shrink-0">{cat?.icon || '📚'}</span>
@@ -263,7 +365,7 @@ export const TrainingAdminPage: React.FC = () => {
       {/* Content Viewer Modal */}
       {showContentViewer && viewingModule && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0, 0, 0, 0.8)', backdropFilter: 'blur(8px)' }} onClick={() => setShowContentViewer(false)}>
-          <div className="rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }} onClick={e => e.stopPropagation()}>
+          <div className="rounded-none max-w-3xl w-full max-h-[85vh] overflow-y-auto animate-fade-in-up bg-[#0a0a0a] border border-[#333]" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
               <div className="flex justify-between items-start">
                 <div>
@@ -282,25 +384,42 @@ export const TrainingAdminPage: React.FC = () => {
                 <span className="badge badge-info">⏱ {viewingModule.durationMinutes} хв</span>
               </div>
               {viewingModule.content ? (
-                <div className="p-5 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                <div className="p-5 rounded-none bg-[#111] border border-[#333]">
                   <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ab3-gold)', fontSize: '13px', letterSpacing: '0.5px' }}>📝 ЗМІСТ МОДУЛЯ</h3>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}>
-                    {viewingModule.content.split('\n').map((line: string, i: number) => {
-                      if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-bold mt-5 mb-2" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>{line.replace('### ', '')}</h3>;
-                      if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--ab3-gold)', fontSize: '19px' }}>{line.replace('## ', '')}</h2>;
-                      if (line.startsWith('**')) {
-                        const parts = line.split(/\*\*(.*?)\*\*/);
-                        return <p key={i} className="font-semibold" style={{ color: 'var(--text-primary)' }}>{parts.map((p: string, j: number) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}</p>;
-                      }
-                      if (line.startsWith('- ')) return <li key={i} className="ml-4 mb-1" style={{ color: 'var(--text-secondary)' }}>{line.replace('- ', '• ')}</li>;
-                      if (/^\d+\.\s/.test(line)) return <p key={i} className="mb-2 font-medium" style={{ color: 'var(--text-primary)' }}>{line}</p>;
-                      if (line.trim() === '') return <div key={i} className="h-3" />;
-                      return <p key={i} className="mb-1" style={{ color: 'var(--text-secondary)' }}>{line}</p>;
-                    })}
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(viewingModule.content);
+                        if (parsed && parsed.blocks) {
+                          return parsed.blocks.map((block: any, i: number) => {
+                            if (block.type === 'header') return <h2 key={i} className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--ab3-gold)', fontSize: '19px' }}>{block.content}</h2>;
+                            if (block.type === 'warning') return <div key={i} className="border-l-4 border-red-500 bg-red-500/10 p-3 mb-4 text-red-200">⚠️ {block.content}</div>;
+                            if (block.type === 'info') return <div key={i} className="border-l-4 border-blue-500 bg-blue-500/10 p-3 mb-4 text-blue-200">ℹ️ {block.content}</div>;
+                            if (block.type === 'image') return <img key={i} src={block.content} alt="module" className="max-w-full border border-[#333] mb-4" />;
+                            if (block.type === 'video') return <div key={i} className="mb-4 text-blue-400">[Відео: {block.content}]</div>;
+                            return <p key={i} className="mb-3" style={{ color: 'var(--text-secondary)' }}>{block.content}</p>;
+                          });
+                        }
+                      } catch(e) {}
+                      
+                      // Fallback for old markdown
+                      return viewingModule.content.split('\n').map((line: string, i: number) => {
+                        if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-bold mt-5 mb-2" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>{line.replace('### ', '')}</h3>;
+                        if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-bold mt-6 mb-3" style={{ color: 'var(--ab3-gold)', fontSize: '19px' }}>{line.replace('## ', '')}</h2>;
+                        if (line.startsWith('**')) {
+                          const parts = line.split(/\*\*(.*?)\*\*/);
+                          return <p key={i} className="font-semibold" style={{ color: 'var(--text-primary)' }}>{parts.map((p: string, j: number) => j % 2 === 1 ? <strong key={j}>{p}</strong> : p)}</p>;
+                        }
+                        if (line.startsWith('- ')) return <li key={i} className="ml-4 mb-1" style={{ color: 'var(--text-secondary)' }}>{line.replace('- ', '• ')}</li>;
+                        if (/^\d+\.\s/.test(line)) return <p key={i} className="mb-2 font-medium" style={{ color: 'var(--text-primary)' }}>{line}</p>;
+                        if (line.trim() === '') return <div key={i} className="h-3" />;
+                        return <p key={i} className="mb-1" style={{ color: 'var(--text-secondary)' }}>{line}</p>;
+                      });
+                    })()}
                   </div>
                 </div>
               ) : (
-                <div className="p-8 text-center rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                <div className="p-8 text-center rounded-none" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
                   <div className="text-6xl mb-4">📝</div>
                   <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Зміст порожній</h3>
                   <p style={{ color: 'var(--text-muted)' }}>Натисніть ✏️ щоб додати зміст модуля</p>

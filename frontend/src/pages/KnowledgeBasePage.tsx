@@ -85,7 +85,7 @@ export function KnowledgeBasePage() {
     const diff = difficulties.find(d => d.id === difficulty);
     if (!diff) return null;
     return (
-      <span className="badge" style={{ background: `${diff.color}20`, color: diff.color, border: `1px solid ${diff.color}40` }}>
+      <span className="badge rounded-none font-mono uppercase tracking-widest text-[10px]" style={{ background: `${diff.color}15`, color: diff.color, border: `1px solid ${diff.color}` }}>
         {diff.label}
       </span>
     );
@@ -95,18 +95,18 @@ export function KnowledgeBasePage() {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2', letterSpacing: '1px' }}>
-          🔍 База Знань
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3 glitch-hover cursor-default transition-all duration-300" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+          БАЗА ЗНАНЬ
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>
-          Тактична медицина, озброєння, топографія, звʼязок та виживання
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
+          // МЕДИЦИНА, ОЗБРОЄННЯ, ТОПОГРАФІЯ, ВИЖИВАННЯ //
         </p>
       </div>
 
       {/* Search Bar */}
       <div
-        className="p-4 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}
+        className="p-4 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+        style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
       >
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
@@ -117,7 +117,7 @@ export function KnowledgeBasePage() {
             className="input flex-1"
             style={{ fontSize: '15px' }}
           />
-          <button type="submit" className="btn btn-primary" style={{ padding: '14px 24px', fontSize: '14px' }}>
+          <button type="submit" className="btn btn-primary rounded-none uppercase tracking-widest font-bold" style={{ padding: '14px 24px', fontSize: '14px' }}>
             Пошук
           </button>
         </form>
@@ -125,37 +125,37 @@ export function KnowledgeBasePage() {
 
       {/* Categories */}
       <div
-        className="p-6 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.15s', animationFillMode: 'both' }}
+        className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+        style={{ animationDelay: '0.15s', animationFillMode: 'both' }}
       >
-        <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--ab3-gold)', fontSize: '16px', letterSpacing: '0.5px' }}>
-          📂 Категорії
+        <h2 className="font-mono text-xs font-bold mb-4 uppercase tracking-widest" style={{ color: 'var(--ab3-gold)' }}>
+          [ КАТЕГОРІЇ ]
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <button
             onClick={() => setSelectedCategory(null)}
-            className="p-4 rounded-xl border transition-all duration-300 hover:scale-105"
+            className="p-4 rounded-none border transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_20px_-10px_rgba(201,162,39,0.4)]"
             style={{
-              background: selectedCategory === null ? 'rgba(201, 162, 39, 0.15)' : 'var(--bg-card)',
-              borderColor: selectedCategory === null ? 'var(--ab3-gold)' : 'var(--border-subtle)',
+              background: selectedCategory === null ? 'rgba(201, 162, 39, 0.15)' : '#050505',
+              borderColor: selectedCategory === null ? 'var(--ab3-gold)' : '#333',
             }}
           >
             <div className="text-3xl mb-2">📖</div>
-            <div className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontSize: '13px' }}>Усі статті</div>
+            <div className="font-mono font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)', fontSize: '11px' }}>Усі статті</div>
           </button>
 
           {categories.map(cat => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className="p-4 rounded-xl border transition-all duration-300 hover:scale-105"
+              className="p-4 rounded-none border transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_20px_-10px_rgba(201,162,39,0.4)]"
               style={{
-                background: selectedCategory === cat.id ? 'rgba(201, 162, 39, 0.15)' : 'var(--bg-card)',
-                borderColor: selectedCategory === cat.id ? 'var(--ab3-gold)' : 'var(--border-subtle)',
+                background: selectedCategory === cat.id ? 'rgba(201, 162, 39, 0.15)' : '#050505',
+                borderColor: selectedCategory === cat.id ? 'var(--ab3-gold)' : '#333',
               }}
             >
               <div className="text-3xl mb-2">{cat.icon}</div>
-              <div className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontSize: '13px' }}>{cat.label}</div>
+              <div className="font-mono font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)', fontSize: '11px' }}>{cat.label}</div>
             </button>
           ))}
         </div>
@@ -163,13 +163,13 @@ export function KnowledgeBasePage() {
 
       {/* Difficulty Filter */}
       <div
-        className="p-4 rounded-2xl mb-8 animate-fade-in-up"
-        style={{ background: 'var(--bg-glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-subtle)', animationDelay: '0.2s', animationFillMode: 'both' }}
+        className="p-4 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
+        style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <button
             onClick={() => setSelectedDifficulty(null)}
-            className="btn"
+            className="btn w-full flex items-center justify-center text-center rounded-none uppercase tracking-widest font-bold"
             style={{
               background: selectedDifficulty === null ? 'var(--gradient-gold)' : 'transparent',
               color: selectedDifficulty === null ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -184,7 +184,7 @@ export function KnowledgeBasePage() {
             <button
               key={diff.id}
               onClick={() => setSelectedDifficulty(diff.id)}
-              className="btn"
+              className="btn w-full flex items-center justify-center text-center rounded-none uppercase tracking-widest font-bold"
               style={{
                 background: selectedDifficulty === diff.id ? diff.color : 'transparent',
                 color: selectedDifficulty === diff.id ? 'white' : 'var(--text-muted)',
@@ -202,13 +202,13 @@ export function KnowledgeBasePage() {
       {/* Articles List */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
-            {loading ? 'Завантаження...' : `${articles.length} статей`}
+          <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>
+            {loading ? 'ЗАВАНТАЖЕННЯ...' : `${articles.length} СТАТЕЙ`}
           </h2>
         </div>
 
         {loading ? (
-          <div className="p-16 rounded-2xl text-center animate-fade-in-up" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+          <div className="p-16 rounded-none text-center animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
             <svg className="animate-spin w-12 h-12 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
               <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/>
@@ -216,9 +216,9 @@ export function KnowledgeBasePage() {
             <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Завантаження матеріалів...</p>
           </div>
         ) : articles.length === 0 ? (
-          <div className="p-16 rounded-2xl text-center animate-fade-in-up" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)', animationDelay: '0.1s', animationFillMode: 'both' }}>
+          <div className="p-16 rounded-none text-center animate-fade-in-up bg-[#0a0a0a] border border-[#333]" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
             <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>Статей не знайдено</h3>
+            <h3 className="text-xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '20px' }}>СТАТЕЙ НЕ ЗНАЙДЕНО</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: '1.6' }}>Спробуйте змінити фільтри або пошуковий запит</p>
           </div>
         ) : (
@@ -227,24 +227,25 @@ export function KnowledgeBasePage() {
               <button
                 key={article.id}
                 onClick={() => setSelectedArticle(article)}
-                className="military-card p-6 text-left group cursor-pointer animate-fade-in-up"
+                className="military-card h-full flex flex-col rounded-none p-6 text-left group cursor-pointer animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)] relative overflow-hidden"
                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
                 <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
 
-                <h3 className="text-lg font-heading font-bold mb-3 group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
-                  {article.title}
-                </h3>
-                <p className="text-sm mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
-                  {article.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="badge badge-gold">{article.category}</span>
-                  {getDifficultyBadge(article.difficulty)}
+                <div className="flex-1">
+                  <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-3 group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
+                    {article.title}
+                  </h3>
+                  <p className="font-mono text-xs mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                    {article.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="badge rounded-none font-mono uppercase tracking-widest bg-[#111] border border-[var(--ab3-gold)] text-[var(--ab3-gold)] text-[10px]">{article.category}</span>
+                    {getDifficultyBadge(article.difficulty)}
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center text-xs pt-4 border-t" style={{ borderColor: 'var(--border-subtle)', color: 'var(--text-muted)', fontSize: '12px' }}>
+                <div className="mt-auto w-full flex justify-between items-center font-mono uppercase tracking-widest pt-4 border-t" style={{ borderColor: '#222', color: 'var(--text-muted)', fontSize: '10px' }}>
                   <span>⏱️ {article.estimatedMinutes} хв</span>
                   <span>👁️ {article.viewCount}</span>
                 </div>
@@ -262,7 +263,7 @@ export function KnowledgeBasePage() {
           onClick={() => setSelectedArticle(null)}
         >
           <div
-            className="rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto animate-fade-in-up"
+            className="rounded-none max-w-2xl w-full max-h-[80vh] overflow-y-auto animate-fade-in-up"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', animationFillMode: 'both' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -294,7 +295,7 @@ export function KnowledgeBasePage() {
 
               {/* Full Article Content */}
               {selectedArticle.content && (
-                <div className="p-5 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                <div className="p-5 rounded-none" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
                   <h3 className="text-sm font-bold mb-4" style={{ color: 'var(--ab3-gold)', fontSize: '13px', letterSpacing: '0.5px' }}>📖 ЗМІСТ СТАТТІ</h3>
                   <div className="prose" style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7' }}>
                     {selectedArticle.content.split('\n').map((line: string, i: number) => {

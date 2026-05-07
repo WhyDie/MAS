@@ -30,7 +30,7 @@ COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/package*.json ./
 
 # Install only production dependencies
-RUN npm ci --omit=dev --prefer-offline --no-audit
+RUN npm install --omit=dev --prefer-offline --no-audit
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

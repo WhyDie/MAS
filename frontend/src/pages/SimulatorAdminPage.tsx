@@ -47,6 +47,70 @@ const emptySimulator: Omit<Simulator, 'id' | 'sortOrder'> = {
   quizContent: null, scenarioFlow: null
 };
 
+const defaultScenarioFlow = {
+  nodes: [
+    {
+      id: 'node_1',
+      text: 'УВАГА: Ваш підрозділ потрапив під раптовий мінометний обстріл. Двоє бійців отримали поранення. Навколо пил та хаос. Ваші дії?',
+      choices: [
+        { text: 'Негайно кинутися під вогнем надавати допомогу пораненим', score: 0, nextNode: 'node_fail_1' },
+        { text: 'Знайти укриття, доповісти командиру та наказати пораненим накласти собі турнікети', score: 20, nextNode: 'node_2' }
+      ]
+    },
+    {
+      id: 'node_fail_1',
+      text: 'ФАТАЛЬНА ПОМИЛКА: Ви побігли під обстрілом і самі отримали осколкове поранення. Тепер медикам треба рятувати трьох. Ви стали тягарем для підрозділу.',
+      choices: [{ text: 'Завершити симуляцію', score: 0, nextNode: '' }]
+    },
+    {
+      id: 'node_2',
+      text: 'ОЦІНКА СИТУАЦІЇ: Обстріл тимчасово припинився. Ви підбігли до поранених. Один має масивну кровотечу з ноги, інший контужений і кричить. Що робите спочатку?',
+      choices: [
+        { text: 'Допомагаю контуженому прийти до тями, щоб він замовк', score: 0, nextNode: 'node_fail_2' },
+        { text: 'Накладаю турнікет бійцю з артеріальною кровотечею (MARCH)', score: 30, nextNode: 'node_win' }
+      ]
+    },
+    {
+      id: 'node_fail_2',
+      text: 'ВТРАТА БОЙЦЯ: Поки ви заспокоювали контуженого, інший боєць втратив критичну кількість крові та загинув. Неправильно розставлені пріоритети.',
+      choices: [{ text: 'Завершити симуляцію', score: 0, nextNode: '' }]
+    },
+    {
+      id: 'node_win',
+      text: 'МІСІЯ ВИКОНАНА: Кровотеча зупинена. Ви врятували життя побратиму, організували жовту зону і успішно передали його евакуаційній групі (MEDEVAC).',
+      choices: [{ text: 'Завершити місію', score: 50, nextNode: '' }]
+    }
+  ]
+};
+
+const defaultQuizQuestions: Record<string, Array<{ question: string; options: string[]; correctAnswer: number }>> = {
+  scenario: [
+    { question: 'Перший крок за протоколом MARCH?', options: ['Airway', 'Massive Hemorrhage', 'Respiration', 'Circulation'], correctAnswer: 1 },
+    { question: 'Куди накладати турнікет?', options: ['На рану', '5-7 см вище рани', 'Нижче рани', 'Без різниці'], correctAnswer: 1 },
+    { question: 'Як перевірити прохідність дихальних шляхів?', options: ['Підняти підборіддя, відхилити голову', 'Струсити за плече', 'Покричати', 'Дати води'], correctAnswer: 0 },
+  ],
+  quiz: [
+    { question: 'Який калібр автомата АК-74?', options: ['5.45 мм', '7.62 мм', '9 мм', '5.56 мм'], correctAnswer: 0 },
+    { question: 'Максимальна дальність АК-74?', options: ['500 м', '1000 м', '3000 м', '100 м'], correctAnswer: 2 },
+    { question: 'Скільки частин при неповному розбиранні АК-74?', options: ['3', '5', '7', '10'], correctAnswer: 1 },
+  ],
+  combat_drill: [
+    { question: 'Що робити при вогневому контакті?', options: ['Відповісти вогнем, шукати укриття', 'Бігти вперед', 'Здатися', 'Кричати'], correctAnswer: 0 },
+    { question: 'Дистанція для ефективного вогню з АК-74?', options: ['100-300 м', '50-100 м', '500-700 м', '1 км'], correctAnswer: 0 },
+    { question: 'Як подати сигнал для евакуації?', options: ['Рація, дим, сигнал', 'Махати руками', 'Голосно кричати', 'Нічого не робити'], correctAnswer: 0 },
+  ],
+  survival: [
+    { question: 'Як знайти воду в польових умовах?', options: ['Збір конденсату, копати', 'Пити з калюж', 'Чекати дощ', 'Нічого не пити'], correctAnswer: 0 },
+    { question: 'Як розвести вогонь без сірників?', options: ['Кресало, лінза, тертя', 'Чекати', 'Неможливо', 'Дмухати'], correctAnswer: 0 },
+    { question: 'Найкраще укриття в полі?', options: ['Окоп, природні заглиблення', 'Відкрите поле', 'Верхівка дерева', 'Під одиночним деревом'], correctAnswer: 0 },
+  ],
+  communication: [
+    { question: 'Що таке позивний?', options: ['Умовне імʼя для радіопереговорів', 'Номер телефону', 'Адреса', 'Пароль'], correctAnswer: 0 },
+    { question: 'Як повідомити координати?', options: ['За картою, GPS, азимут', 'Навмання', "По телефону", 'Не повідомляти'], correctAnswer: 0 },
+    { question: 'Що робити при перешкодах?', options: ['Змінити частоту, скоротити передачу', 'Кричати голосніше', 'Вимкнути радіо', 'Чекати'], correctAnswer: 0 },
+  ],
+};
+
 const DraggableList: React.FC<{
   items: Array<{ id: string }>;
   onReorder: (ids: string[]) => void;
@@ -107,9 +171,13 @@ export const SimulatorAdminPage: React.FC = () => {
   const loadSimulators = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/training-simulators');
+      const res = await api.get('/training-simulators?limit=200');
       const data = res.data.data?.simulators || res.data?.simulators || res.data || [];
-      setSimulators(data.sort((a: Simulator, b: Simulator) => a.sortOrder - b.sortOrder));
+      const list = Array.isArray(data) ? data : (data.data || []);
+      const sorted = list.sort((a: any, b: any) => {
+        return (typeof a.sortOrder === 'number' ? a.sortOrder : 999) - (typeof b.sortOrder === 'number' ? b.sortOrder : 999);
+      });
+      setSimulators(sorted);
     } catch { setError('Не вдалося завантажити симулятори'); }
     finally { setLoading(false); }
   };
@@ -128,12 +196,24 @@ export const SimulatorAdminPage: React.FC = () => {
       try {
         const res = await api.get(`/training-simulators/${sim.id}`);
         const full = res.data.data || res.data;
+          
+          let qContent = full.quizContent;
+          if (qContent === '[object Object]') qContent = null;
+          while (typeof qContent === 'string') {
+            try { qContent = JSON.parse(qContent); } catch(e) { break; }
+          }
+          let sFlow = full.scenarioFlow;
+          if (sFlow === '[object Object]') sFlow = null;
+          while (typeof sFlow === 'string') {
+            try { sFlow = JSON.parse(sFlow); } catch(e) { break; }
+          }
+          
         setForm({
           title: full.title, description: full.description, type: full.type,
           difficulty: full.difficulty, category: full.category,
           estimatedMinutes: full.estimatedMinutes, isActive: full.isActive,
-          quizContent: full.quizContent || null,
-          scenarioFlow: full.scenarioFlow || null,
+            quizContent: qContent || null,
+            scenarioFlow: sFlow || null,
         });
       } catch {
         setForm({ title: sim.title, description: sim.description, type: sim.type, difficulty: sim.difficulty, category: sim.category, estimatedMinutes: sim.estimatedMinutes, isActive: sim.isActive, quizContent: null, scenarioFlow: null });
@@ -147,30 +227,47 @@ export const SimulatorAdminPage: React.FC = () => {
   };
 
   const openContentEditor = async (sim: Simulator) => {
+    let full = sim;
     try {
       const res = await api.get(`/training-simulators/${sim.id}`);
-      const full = res.data.data || res.data;
-
-      if (sim.type === 'quiz' || sim.type === 'combat_drill' || sim.type === 'survival' || sim.type === 'communication') {
-        setEditorType('questions');
-        if (full.quizContent?.questions) {
-          setQuizQuestions(full.quizContent.questions);
-          setQuizPassingScore(full.quizContent.passingScore || 60);
-        } else {
-          setQuizQuestions([]);
-          setQuizPassingScore(60);
-        }
-      } else if (sim.type === 'scenario') {
-        setEditorType('scenario');
-        if (full.scenarioFlow?.nodes) {
-          setScenarioNodes(full.scenarioFlow.nodes);
-        } else {
-          setScenarioNodes([]);
-        }
-      }
+      full = res.data.data || res.data || sim;
     } catch {
-      if (sim.type === 'scenario') { setEditorType('scenario'); setScenarioNodes([]); }
-      else { setEditorType('questions'); setQuizQuestions([]); setQuizPassingScore(60); }
+      console.warn('Using list data for editor fallback');
+    }
+
+    let qContent = full.quizContent;
+    if (qContent === '[object Object]') qContent = null;
+    while (typeof qContent === 'string') {
+      try { qContent = JSON.parse(qContent); } catch(e) { break; }
+    }
+    let sFlow = full.scenarioFlow;
+    if (sFlow === '[object Object]') sFlow = null;
+    while (typeof sFlow === 'string') {
+      try { sFlow = JSON.parse(sFlow); } catch(e) { break; }
+    }
+
+    if (sim.type === 'scenario') {
+      setEditorType('scenario');
+      if (sFlow && sFlow.nodes && Array.isArray(sFlow.nodes) && sFlow.nodes.length > 0) {
+        setScenarioNodes(sFlow.nodes);
+      } else {
+        setScenarioNodes(JSON.parse(JSON.stringify(defaultScenarioFlow.nodes)));
+      }
+    } else {
+      setEditorType('questions');
+      if (qContent && qContent.questions && Array.isArray(qContent.questions) && qContent.questions.length > 0) {
+        const mappedQuestions = qContent.questions.map((q: any) => ({
+          question: q.question || '',
+          options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+          correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : (q.correct !== undefined ? q.correct : 0)
+        }));
+        setQuizQuestions(mappedQuestions);
+        setQuizPassingScore(qContent.passingScore || 60);
+      } else {
+        const defaults = defaultQuizQuestions[sim.type] || defaultQuizQuestions.quiz;
+        setQuizQuestions(JSON.parse(JSON.stringify(defaults)));
+        setQuizPassingScore(60);
+      }
     }
     setEditingSim(sim);
     setShowContentEditor(true);
@@ -182,6 +279,8 @@ export const SimulatorAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const data: any = { ...form };
+      if (data.quizContent && typeof data.quizContent === 'object') data.quizContent = JSON.stringify(data.quizContent);
+      if (data.scenarioFlow && typeof data.scenarioFlow === 'object') data.scenarioFlow = JSON.stringify(data.scenarioFlow);
       if (editingSim) {
         await api.put(`/training-simulators/${editingSim.id}`, data);
         setSuccess('Симулятор оновлено');
@@ -199,16 +298,16 @@ export const SimulatorAdminPage: React.FC = () => {
     if (!editingSim) return;
     try {
       setLoading(true);
-      const data: any = {};
+      const data: any = { ...editingSim };
       if (editorType === 'questions') {
         if (quizQuestions.length === 0) { setError('Додайте хоча б одне запитання'); setLoading(false); return; }
-        data.quizContent = { questions: quizQuestions, passingScore: quizPassingScore, maxScore: 100 };
+        data.quizContent = JSON.stringify({ questions: quizQuestions, passingScore: quizPassingScore, maxScore: 100 });
       } else if (editorType === 'scenario') {
         if (scenarioNodes.length === 0) { setError('Додайте хоча б один вузол сценарію'); setLoading(false); return; }
-        data.scenarioFlow = { nodes: scenarioNodes, maxScore: 100, passingScore: 60 };
+        data.scenarioFlow = JSON.stringify({ nodes: scenarioNodes, maxScore: 100, passingScore: 60 });
       }
       await api.put(`/training-simulators/${editingSim.id}`, data);
-      setSuccess(editorType === 'questions' ? `Тест збережено: ${quizQuestions.length} питань` : `Сценарій збережено: ${scenarioNodes.length} вузлів`);
+      setSuccess(`Вміст успішно збережено`);
       setShowContentEditor(false);
       loadSimulators();
     } catch (err: any) { setError(err.response?.data?.error || err.message || 'Помилка'); }
@@ -226,7 +325,9 @@ export const SimulatorAdminPage: React.FC = () => {
   };
   const updateOption = (qIndex: number, oIndex: number, value: string) => {
     const newQ = [...quizQuestions];
-    newQ[qIndex].options[oIndex] = value;
+    const newOptions = [...newQ[qIndex].options];
+    newOptions[oIndex] = value;
+    newQ[qIndex] = { ...newQ[qIndex], options: newOptions };
     setQuizQuestions(newQ);
   };
   const deleteQuestion = (index: number) => {
@@ -240,22 +341,26 @@ export const SimulatorAdminPage: React.FC = () => {
   };
   const updateNodeText = (index: number, text: string) => {
     const newN = [...scenarioNodes];
-    newN[index].text = text;
+    newN[index] = { ...newN[index], text };
     setScenarioNodes(newN);
   };
   const updateChoice = (nIndex: number, cIndex: number, field: string, value: any) => {
     const newN = [...scenarioNodes];
-    newN[nIndex].choices[cIndex] = { ...newN[nIndex].choices[cIndex], [field]: value };
+    const newChoices = [...(newN[nIndex].choices || [])];
+    newChoices[cIndex] = { ...newChoices[cIndex], [field]: value };
+    newN[nIndex] = { ...newN[nIndex], choices: newChoices };
     setScenarioNodes(newN);
   };
   const addChoice = (nIndex: number) => {
     const newN = [...scenarioNodes];
-    newN[nIndex].choices.push({ text: '', score: 0, nextNode: '' });
+    const newChoices = [...(newN[nIndex].choices || []), { text: '', score: 0, nextNode: '' }];
+    newN[nIndex] = { ...newN[nIndex], choices: newChoices };
     setScenarioNodes(newN);
   };
   const deleteChoice = (nIndex: number, cIndex: number) => {
     const newN = [...scenarioNodes];
-    newN[nIndex].choices.splice(cIndex, 1);
+    const newChoices = (newN[nIndex].choices || []).filter((_, i) => i !== cIndex);
+    newN[nIndex] = { ...newN[nIndex], choices: newChoices };
     setScenarioNodes(newN);
   };
   const deleteNode = (index: number) => {
@@ -279,7 +384,16 @@ export const SimulatorAdminPage: React.FC = () => {
     </svg>
   );
 
-  const editorTitle = editingSim ? (editorType === 'scenario' ? '🎭 Редактор сценарію' : `📝 Редактор тесту — ${typeLabels[editingSim.type] || editingSim.type}`) : 'Редактор';
+  const editorTitle = editingSim ? `📝 Налаштування: ${typeLabels[editingSim.type]?.replace(/[^а-яА-ЯіІїЇєЄґҐ\s]/g, '').trim() || editingSim.type}` : 'Редактор';
+
+  const getButtonLabel = (type: string) => {
+    if (type === 'scenario') return '🎭 Сценарій';
+    if (type === 'quiz') return '❓ Вікторина';
+    if (type === 'combat_drill') return '⚔️ Тренування';
+    if (type === 'survival') return '🏕️ Виживання';
+    if (type === 'communication') return '📡 Зв\'язок';
+    return '📝 Вміст';
+  };
 
   // ===== CONTENT EDITOR (Quiz/Scenario) =====
   if (showContentEditor && editingSim) {
@@ -287,7 +401,7 @@ export const SimulatorAdminPage: React.FC = () => {
       <div className="animate-fade-in-up">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-heading font-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>{editorTitle}</h1>
+            <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>{editorTitle}</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '16px' }}>
               {editingSim.title} — {editorType === 'scenario' ? `${scenarioNodes.length} вузлів` : `${quizQuestions.length} питань`}
             </p>
@@ -299,12 +413,12 @@ export const SimulatorAdminPage: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+          <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
             <span>⚠️ {error}</span>
           </div>
         )}
         {success && (
-          <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+          <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
             <span>✅ {success}</span>
           </div>
         )}
@@ -312,7 +426,7 @@ export const SimulatorAdminPage: React.FC = () => {
         {/* QUIZ / QUESTIONS EDITOR */}
         {editorType === 'questions' && (
           <>
-            <div className="p-6 rounded-2xl mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+            <div className="p-6 rounded-none mb-6 bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>⚙️ Налаштування тесту</h3>
               <div className="flex items-center gap-4">
                 <label className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Прохідний бал:</label>
@@ -323,7 +437,7 @@ export const SimulatorAdminPage: React.FC = () => {
 
             <div className="space-y-6">
               {quizQuestions.map((q, qi) => (
-                <div key={qi} className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                <div key={qi} className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold" style={{ color: 'var(--ab3-gold)' }}>📝 Питання {qi + 1}</h3>
                     <button onClick={() => deleteQuestion(qi)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 14px', fontSize: '12px' }}>🗑</button>
@@ -357,37 +471,37 @@ export const SimulatorAdminPage: React.FC = () => {
           <>
             <div className="space-y-6">
               {scenarioNodes.map((node, ni) => (
-                <div key={node.id} className="p-6 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                <div key={node.id} className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold" style={{ color: 'var(--ab3-gold)' }}>🎭 Вузол {ni + 1}</h3>
                     <button onClick={() => deleteNode(ni)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 14px', fontSize: '12px' }}>🗑</button>
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Текст сценарію</label>
-                    <textarea className="input" rows={3} value={node.text} onChange={e => updateNodeText(ni, e.target.value)} placeholder="Опис ситуації..." />
+                    <textarea className="input" rows={3} value={node.text || ''} onChange={e => updateNodeText(ni, e.target.value)} placeholder="Опис ситуації..." />
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Варіанти вибору</label>
-                    {node.choices.map((choice, ci) => (
-                      <div key={ci} className="mb-3 p-4 rounded-xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+                    {(node.choices || []).map((choice, ci) => (
+                      <div key={ci} className="mb-3 p-4 rounded-none bg-[#111] border border-[#333]">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>Вибір {ci + 1}</span>
-                          {node.choices.length > 1 && (
+                          {(node.choices || []).length > 1 && (
                             <button onClick={() => deleteChoice(ni, ci)} className="text-xs" style={{ color: '#f87171' }}>✕ Видалити</button>
                           )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div>
                             <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Текст вибору</label>
-                            <input className="input" value={choice.text} onChange={e => updateChoice(ni, ci, 'text', e.target.value)} placeholder="Текст..." style={{ padding: '8px 12px' }} />
+                            <input className="input" value={choice.text || ''} onChange={e => updateChoice(ni, ci, 'text', e.target.value)} placeholder="Текст..." style={{ padding: '8px 12px' }} />
                           </div>
                           <div>
                             <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Бали</label>
-                            <input type="number" className="input" value={choice.score} onChange={e => updateChoice(ni, ci, 'score', parseInt(e.target.value) || 0)} style={{ padding: '8px 12px' }} />
+                            <input type="number" className="input" value={choice.score || 0} onChange={e => updateChoice(ni, ci, 'score', parseInt(e.target.value) || 0)} style={{ padding: '8px 12px' }} />
                           </div>
                           <div>
                             <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Наступний вузол (ID)</label>
-                            <select className="input" value={choice.nextNode} onChange={e => updateChoice(ni, ci, 'nextNode', e.target.value)} style={{ padding: '8px 12px' }}>
+                            <select className="input" value={choice.nextNode || ''} onChange={e => updateChoice(ni, ci, 'nextNode', e.target.value)} style={{ padding: '8px 12px' }}>
                               <option value="">— Кінець —</option>
                               {scenarioNodes.map((sn, si) => (
                                 <option key={sn.id} value={sn.id}>Вузол {si + 1}</option>
@@ -413,28 +527,28 @@ export const SimulatorAdminPage: React.FC = () => {
   return (
     <div className="animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', letterSpacing: '1px' }}>🎮 Управління симуляторами</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: '1.6' }}>Додавання, редагування, видалення, сортування та редактор контенту</p>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px' }}>УПРАВЛІННЯ СИМУЛЯТОРАМИ</h1>
+        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>// РЕДАКТОР СИМУЛЯТОРІВ //</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-red-glow)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>
           <span>⚠️ {error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-5 rounded-2xl border animate-slide-down" style={{ background: 'var(--ab3-green-glow)', borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
+        <div className="mb-6 p-5 rounded-none border animate-slide-down bg-[#0a0a0a]" style={{ borderColor: 'rgba(34, 197, 94, 0.3)', color: '#4ade80' }}>
           <span>✅ {success}</span>
         </div>
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>🎮 Симулятори</h2>
+        <h2 className="text-xl font-heading font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)', fontSize: '22px' }}>СИМУЛЯТОРИ</h2>
         <button onClick={() => openForm()} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>➕ Додати симулятор</button>
       </div>
 
       {showForm && (
-        <div className="p-6 rounded-2xl mb-8 animate-fade-in-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-6 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]">
           <h3 className="text-lg font-bold mb-6" style={{ color: 'var(--text-primary)' }}>{editingSim ? '✏️ Редагування' : '➕ Новий симулятор'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div><label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Назва *</label><input className="input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Назва симулятора" /></div>
@@ -455,7 +569,7 @@ export const SimulatorAdminPage: React.FC = () => {
       )}
 
       {loading && !showForm ? (
-        <div className="p-16 text-center rounded-2xl" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-subtle)' }}>
+        <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
           <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
           <p style={{ color: 'var(--text-muted)' }}>Завантаження...</p>
         </div>
@@ -471,7 +585,7 @@ export const SimulatorAdminPage: React.FC = () => {
 
               return (
                 <div key={s.id} draggable onDragStart={h.onDragStart} onDragOver={h.onDragOver} onDrop={h.onDrop}
-                  className="military-card p-5 flex items-center gap-4 transition-all duration-300"
+                  className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-5 flex items-center gap-4 transition-all duration-300"
                   style={{ cursor: 'grab', opacity: isDragging ? 0.4 : 1, transform: isOver ? 'translateY(8px)' : 'none', boxShadow: isOver ? '0 -4px 0 0 var(--ab3-gold)' : 'none', borderLeft: `4px solid ${diff.color}` }}>
                   <div className="flex-shrink-0">{dragIcon}</div>
                   <span className="text-2xl flex-shrink-0">{s.type === 'scenario' ? '🎯' : s.type === 'quiz' ? '❓' : s.type === 'combat_drill' ? '⚔️' : s.type === 'survival' ? '🏕️' : '📡'}</span>
@@ -485,7 +599,7 @@ export const SimulatorAdminPage: React.FC = () => {
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <button onClick={() => openContentEditor(s)} className="btn" style={{ background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', padding: '6px 12px', fontSize: '11px' }}>
-                      {s.type === 'scenario' ? '🎭 Сценарій' : '📝 Тест'}
+                      {getButtonLabel(s.type)}
                     </button>
                     <button onClick={() => openForm(s)} className="btn" style={{ background: 'var(--ab3-gold-glow)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--ab3-gold)', padding: '6px 12px', fontSize: '11px' }}>✏️</button>
                     <button onClick={() => deleteSimulator(s.id)} className="btn" style={{ background: 'var(--ab3-red-glow)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', padding: '6px 12px', fontSize: '11px' }}>🗑</button>

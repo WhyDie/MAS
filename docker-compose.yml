@@ -59,6 +59,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend/src:/app/src
+      - ./backend/tsconfig.json:/app/tsconfig.json
     command: npm run dev
 
   frontend:
