@@ -94,7 +94,7 @@ graph TB
 
     subgraph Database ["Сховище Даних"]
         PG[("PostgreSQL (Основна БД)")]
-        Redis[("Redis (Кеш / Сесії)") ]
+        Redis[("Redis (Кеш / Сесії)")]
         Files["Файлове сховище (Multer)"]
     end
 
