@@ -29,8 +29,8 @@ router.get('/requests', async (req, res) => {
 router.get('/all-requests', async (req, res) => {
   try {
     const userId = getUserId(req);
-    const rows = await AppDataSource.query(`SELECT p.*, u."firstName", u."lastName", u."rank" FROM "psychological_support" p LEFT JOIN "users" u ON p."userId" = u."id" WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`, [userId]);
-    sendSuccess(res, rows.map((r: any) => ({ ...r, user: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })));
+    const rows = await AppDataSource.query(`SELECT p.*, u."firstName", u."lastName", u."middleName", u."rank" FROM "psychological_support" p LEFT JOIN "users" u ON p."userId" = u."id" WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`, [userId]);
+    sendSuccess(res, rows.map((r: any) => ({ ...r, user: { firstName: r.firstName, lastName: r.lastName, middleName: r.middleName, rank: r.rank } })));
   } catch (e) { 
     sendError(res, 'Помилка сервера', 500); 
   }

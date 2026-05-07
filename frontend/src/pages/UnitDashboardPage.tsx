@@ -262,7 +262,7 @@ export const UnitDashboardPage: React.FC = () => {
                 {members.map(m => (
                   <tr key={m.id} className="border-b border-[#111] hover:bg-[#111] transition-colors">
                     <td className="py-4 px-4 text-[var(--ab3-gold)] font-bold font-heading tracking-widest uppercase">{m.rank || 'СОЛДАТ'}</td>
-                    <td className="py-4 px-4 text-white font-bold">{m.lastName} {m.firstName}</td>
+                    <td className="py-4 px-4 text-white font-bold">{m.lastName} {m.firstName} {m.middleName}</td>
                     <td className="py-4 px-4 text-gray-400 text-sm font-mono">{m.position || 'Стрілець'}</td>
                     <td className="py-4 px-4"><span className="px-2 py-1 bg-black text-[10px] text-gray-400 font-mono border border-[#333] tracking-widest uppercase">{m.role}</span></td>
                   </tr>
@@ -275,7 +275,7 @@ export const UnitDashboardPage: React.FC = () => {
             {requests.map(r => (
               <div key={r.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 bg-[#0a0a0a] border border-[#333] mb-3 hover:border-[var(--ab3-gold)] transition-colors gap-4">
                 <div>
-                  <h4 className="text-white font-black font-heading uppercase tracking-widest text-lg">{r.rank} {r.lastName} {r.firstName}</h4>
+                  <h4 className="text-white font-black font-heading uppercase tracking-widest text-lg">{r.rank} {r.lastName} {r.firstName} {r.middleName}</h4>
                   <p className="text-xs text-gray-500 font-mono tracking-widest uppercase">{r.position}</p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
@@ -296,7 +296,7 @@ export const UnitDashboardPage: React.FC = () => {
              {searchResults.map(u => (
                <div key={u.id} className="flex justify-between items-center p-4 bg-[#0a0a0a] border border-[#333] mb-3 hover:border-blue-500 transition-colors gap-4">
                  <div>
-                   <h4 className="text-white font-black font-heading uppercase tracking-widest text-lg">{u.rank} {u.lastName} {u.firstName}</h4>
+                   <h4 className="text-white font-black font-heading uppercase tracking-widest text-lg">{u.rank} {u.lastName} {u.firstName} {u.middleName}</h4>
                    <p className="text-xs text-gray-500 font-mono tracking-widest uppercase">{u.position}</p>
                  </div>
                  <button onClick={() => handleForceAdd(u.id)} className="bg-blue-900/30 border border-blue-900 text-blue-400 hover:bg-blue-600 hover:text-white px-6 py-3 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors">ВКЛЮЧИТИ В НАКАЗ</button>

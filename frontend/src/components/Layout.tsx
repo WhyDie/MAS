@@ -727,7 +727,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
                 <div className={`flex-1 min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'w-0 opacity-0 overflow-hidden' : 'w-auto opacity-100'}`}>
                   <p className="font-heading font-black uppercase tracking-wider truncate group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '13px', lineHeight: '1.3' }}>
-                    {(user?.firstName || user?.lastName) ? `${user?.firstName || ''} ${user?.lastName || ''}`.trim() : user?.email || 'Користувач'}
+                    {(user?.firstName || user?.lastName || (user as any)?.middleName) ? `${user?.lastName || ''} ${user?.firstName || ''} ${(user as any)?.middleName || ''}`.trim() : user?.email || 'Користувач'}
                   </p>
                   <p className="font-mono text-[10px] uppercase tracking-widest truncate" style={{ color: 'var(--text-faint)' }}>
                     {user?.email}
