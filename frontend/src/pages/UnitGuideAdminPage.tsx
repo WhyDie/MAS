@@ -156,7 +156,7 @@ export const UnitGuideAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.get('/unit-guide/rooms');
-      setRooms((res.data.data || res.data || []).sort((a: UnitRoom, b: UnitRoom) => a.sortOrder - b.sortOrder));
+      setRooms((res.data.data || res.data || []).filter((r: UnitRoom) => r.isActive !== false && (r as any).isActive !== 0).sort((a: UnitRoom, b: UnitRoom) => a.sortOrder - b.sortOrder));
     } catch { setError('Не вдалося завантажити приміщення'); }
     finally { setLoading(false); }
   };
@@ -165,7 +165,7 @@ export const UnitGuideAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.get('/unit-guide/staff');
-      setStaffList((res.data.data || res.data || []).sort((a: UnitStaff, b: UnitStaff) => a.sortOrder - b.sortOrder));
+      setStaffList((res.data.data || res.data || []).filter((s: UnitStaff) => s.isActive !== false && (s as any).isActive !== 0).sort((a: UnitStaff, b: UnitStaff) => a.sortOrder - b.sortOrder));
     } catch { setError('Не вдалося завантажити персонал'); }
     finally { setLoading(false); }
   };
@@ -174,7 +174,7 @@ export const UnitGuideAdminPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.get('/unit-guide/steps');
-      setSteps((res.data.data || res.data || []).sort((a: ArrivalStep, b: ArrivalStep) => a.sortOrder - b.sortOrder));
+      setSteps((res.data.data || res.data || []).filter((s: ArrivalStep) => s.isActive !== false && (s as any).isActive !== 0).sort((a: ArrivalStep, b: ArrivalStep) => a.sortOrder - b.sortOrder));
     } catch { setError('Не вдалося завантажити кроки'); }
     finally { setLoading(false); }
   };
@@ -229,7 +229,9 @@ export const UnitGuideAdminPage: React.FC = () => {
       await api.delete(`/unit-guide/rooms/${id}`);
       setSuccess('Приміщення видалено');
       loadRooms();
-    } catch { setError('Не вдалося видалити'); }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Не вдалося видалити');
+    }
   };
 
   // ===== STAFF CRUD =====
@@ -269,7 +271,9 @@ export const UnitGuideAdminPage: React.FC = () => {
       await api.delete(`/unit-guide/staff/${id}`);
       setSuccess('Співробітника видалено');
       loadStaff();
-    } catch { setError('Не вдалося видалити'); }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Не вдалося видалити');
+    }
   };
 
   // ===== STEPS CRUD =====
@@ -309,7 +313,9 @@ export const UnitGuideAdminPage: React.FC = () => {
       await api.delete(`/unit-guide/steps/${id}`);
       setSuccess('Крок видалено');
       loadSteps();
-    } catch { setError('Не вдалося видалити'); }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Не вдалося видалити');
+    }
   };
 
   const tabs = [
@@ -352,10 +358,10 @@ export const UnitGuideAdminPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); setShowRoomForm(false); setShowStaffForm(false); setShowStepForm(false); }}
-              className="btn" style={{
+              className="btn w-full flex items-center justify-center text-center" style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
                 border: `1px solid ${activeTab === tab.id ? 'var(--ab3-gold)' : 'var(--border-subtle)'}`,

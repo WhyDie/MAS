@@ -18,11 +18,11 @@ export const MentorDashboardPage: React.FC = () => {
     try {
       const [myReqRes, allReqRes, menRes] = await Promise.all([
         // 1. Мої вже призначені запити
-        api.get('/mentorship/mentor/requests').catch(() => ({ data: [] })),
+        api.get('/mentorship/requests').catch(() => ({ data: [] })),
         // 2. Всі запити системи (щоб знайти "нічийні" відкриті)
         api.get('/mentorship/all-requests').catch(() => ({ data: [] })),
         // 3. Мої підопічні
-        api.get('/mentorship/mentor/mentees').catch(() => ({ data: [] }))
+        api.get('/mentorship/mentees').catch(() => ({ data: [] }))
       ]);
       
       const myReqs = Array.isArray(myReqRes.data?.data) ? myReqRes.data.data : (Array.isArray(myReqRes.data) ? myReqRes.data : []);
@@ -82,13 +82,13 @@ export const MentorDashboardPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333]">
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setActiveTab('requests')} className="btn" style={{ background: activeTab === 'requests' ? 'var(--gradient-gold)' : 'transparent', color: activeTab === 'requests' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${activeTab === 'requests' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 18px', fontSize: '13px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <button onClick={() => setActiveTab('requests')} className="btn w-full flex items-center justify-center text-center" style={{ background: activeTab === 'requests' ? 'var(--gradient-gold)' : 'transparent', color: activeTab === 'requests' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${activeTab === 'requests' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 18px', fontSize: '13px' }}>
             📩 Вхідні запити {requests.filter(r => r.status === 'open' || r.status === 'new').length > 0 && (
               <span className="bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] ml-2">{requests.filter(r => r.status === 'open' || r.status === 'new').length}</span>
             )}
           </button>
-          <button onClick={() => setActiveTab('mentees')} className="btn" style={{ background: activeTab === 'mentees' ? 'var(--gradient-gold)' : 'transparent', color: activeTab === 'mentees' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${activeTab === 'mentees' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 18px', fontSize: '13px' }}>
+          <button onClick={() => setActiveTab('mentees')} className="btn w-full flex items-center justify-center text-center" style={{ background: activeTab === 'mentees' ? 'var(--gradient-gold)' : 'transparent', color: activeTab === 'mentees' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${activeTab === 'mentees' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 18px', fontSize: '13px' }}>
             👥 Мої підопічні
           </button>
         </div>
@@ -162,8 +162,8 @@ export const MentorDashboardPage: React.FC = () => {
                 <div className="h-full transition-all duration-1000" style={{ background: 'var(--gradient-gold)', width: `${m.progress}%` }}></div>
               </div>
               <div className="flex gap-2 mt-4">
-                <button className="btn flex-1 text-xs" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-primary)' }}>📊 Прогрес</button>
-                <button className="btn flex-1 text-xs" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-primary)' }}>💬 Написати</button>
+              <button onClick={() => alert('Детальна статистика у розробці')} className="btn flex-1 text-xs" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-primary)' }}>📊 Прогрес</button>
+              <button onClick={() => alert('Внутрішній чат з бійцем зʼявиться у наступному оновленні!')} className="btn flex-1 text-xs" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-primary)' }}>💬 Написати</button>
               </div>
             </div>
           ))}

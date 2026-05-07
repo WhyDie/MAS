@@ -39,13 +39,19 @@ export const AIChatPage: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
+    if (messages.length > 1 && user?.id) {
+      localStorage.setItem('ai_chat_history_' + user.id, JSON.stringify(messages));
+    }
+  }, [messages, user?.id]);
+
+  useEffect(() => {
     loadHistory();
-  }, []);
+  }, [user?.id]);
 
   const loadHistory = async () => {
     try {
-      const res = await api.get('/chat/history');
-      const history = res.data.data || res.data || [];
+      const saved = localStorage.getItem('ai_chat_history_' + user?.id);
+      const history = saved ? JSON.parse(saved) : [];
       if (history.length > 0) {
         setMessages(history.map((msg: any) => ({ ...msg, timestamp: new Date(msg.timestamp) })));
       }

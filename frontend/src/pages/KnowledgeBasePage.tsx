@@ -95,7 +95,7 @@ export function KnowledgeBasePage() {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3 glitch-hover cursor-default transition-all duration-300" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
           БАЗА ЗНАНЬ
         </h1>
         <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
@@ -166,10 +166,10 @@ export function KnowledgeBasePage() {
         className="p-4 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
         style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <button
             onClick={() => setSelectedDifficulty(null)}
-            className="btn rounded-none uppercase tracking-widest font-bold"
+            className="btn w-full flex items-center justify-center text-center rounded-none uppercase tracking-widest font-bold"
             style={{
               background: selectedDifficulty === null ? 'var(--gradient-gold)' : 'transparent',
               color: selectedDifficulty === null ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -184,7 +184,7 @@ export function KnowledgeBasePage() {
             <button
               key={diff.id}
               onClick={() => setSelectedDifficulty(diff.id)}
-              className="btn rounded-none uppercase tracking-widest font-bold"
+              className="btn w-full flex items-center justify-center text-center rounded-none uppercase tracking-widest font-bold"
               style={{
                 background: selectedDifficulty === diff.id ? diff.color : 'transparent',
                 color: selectedDifficulty === diff.id ? 'white' : 'var(--text-muted)',
@@ -227,24 +227,25 @@ export function KnowledgeBasePage() {
               <button
                 key={article.id}
                 onClick={() => setSelectedArticle(article)}
-                className="military-card rounded-none p-6 text-left group cursor-pointer animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)] relative overflow-hidden"
+                className="military-card h-full flex flex-col rounded-none p-6 text-left group cursor-pointer animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)] relative overflow-hidden"
                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
                 <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
 
-                <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-3 group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
-                  {article.title}
-                </h3>
-                <p className="font-mono text-xs mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                  {article.description}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="badge rounded-none font-mono uppercase tracking-widest bg-[#111] border border-[var(--ab3-gold)] text-[var(--ab3-gold)] text-[10px]">{article.category}</span>
-                  {getDifficultyBadge(article.difficulty)}
+                <div className="flex-1">
+                  <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-3 group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
+                    {article.title}
+                  </h3>
+                  <p className="font-mono text-xs mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                    {article.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="badge rounded-none font-mono uppercase tracking-widest bg-[#111] border border-[var(--ab3-gold)] text-[var(--ab3-gold)] text-[10px]">{article.category}</span>
+                    {getDifficultyBadge(article.difficulty)}
+                  </div>
                 </div>
 
-                <div className="flex justify-between items-center font-mono uppercase tracking-widest pt-4 border-t" style={{ borderColor: '#222', color: 'var(--text-muted)', fontSize: '10px' }}>
+                <div className="mt-auto w-full flex justify-between items-center font-mono uppercase tracking-widest pt-4 border-t" style={{ borderColor: '#222', color: 'var(--text-muted)', fontSize: '10px' }}>
                   <span>⏱️ {article.estimatedMinutes} хв</span>
                   <span>👁️ {article.viewCount}</span>
                 </div>

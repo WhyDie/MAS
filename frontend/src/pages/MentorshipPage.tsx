@@ -42,6 +42,12 @@ export const MentorshipPage: React.FC = () => {
   // Create request state
   const [newRequest, setNewRequest] = useState({ topic: '', description: '', mentorId: '' });
 
+  // Real Quests State
+  const [quests, setQuests] = useState<any[]>([]);
+  const [mentees, setMentees] = useState<any[]>([]);
+  const [newQuest, setNewQuest] = useState({ title: '', desc: '', xp: 100, recruitId: '' });
+  const isMentorAllowed = ['mentor', 'commander', 'admin', 'superadmin'].includes(user?.role || '');
+
   const getMentorName = (mentor: MentorProfile) => {
     const fullName = `${mentor.firstName ?? ''} ${mentor.lastName ?? ''}`.trim();
     return mentor.name || fullName || 'Ментор';
@@ -59,7 +65,23 @@ export const MentorshipPage: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'browse') fetchMentors();
     else if (activeTab === 'my-requests') fetchMyRequests();
+    else if (activeTab === 'quests') fetchQuests();
   }, [activeTab]);
+
+  const fetchQuests = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/mentorship/quests?_t=${Date.now()}`);
+      setQuests(response.data.data || []);
+      
+      if (isMentorAllowed) {
+        const menteesRes = await api.get(`/mentorship/mentees?_t=${Date.now()}`);
+        setMentees(menteesRes.data.data || []);
+      }
+    } catch (err) {
+      setError('Не вдалося завантажити квести');
+    } finally { setLoading(false); }
+  };
 
   const fetchMentors = async () => {
     try {
@@ -75,7 +97,7 @@ export const MentorshipPage: React.FC = () => {
   const fetchMyRequests = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/mentorship/recruit/requests');
+      const response = await api.get(`/mentorship/recruit/requests?_t=${Date.now()}`);
       setMyRequests(response.data.data || response.data || []);
       setError('');
     } catch (err) {
@@ -116,9 +138,39 @@ export const MentorshipPage: React.FC = () => {
     }
   };
 
+  const handleCreateQuest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQuest.title || !newQuest.recruitId) { setError('Заповніть обовʼязкові поля'); return; }
+    try {
+      setLoading(true);
+      await api.post('/mentorship/quests', { title: newQuest.title, description: newQuest.desc, xp: newQuest.xp, recruitId: newQuest.recruitId });
+      setSuccess('Завдання успішно призначено!');
+      setNewQuest({ title: '', desc: '', xp: 100, recruitId: '' });
+      await fetchQuests();
+    } catch (err: any) { setError(err.response?.data?.error || 'Помилка призначення завдання'); }
+    finally { setLoading(false); }
+  };
+
+  const completeQuest = async (id: string) => {
+    try {
+      await api.put(`/mentorship/quests/${id}/status`, { status: 'review' });
+      setSuccess('Відправлено на перевірку ментору!');
+      await fetchQuests();
+    } catch(e: any) { setError(e.response?.data?.error || 'Помилка відправки звіту'); }
+  };
+
+  const reviewQuest = async (id: string, status: 'completed' | 'pending') => {
+    try {
+      await api.put(`/mentorship/quests/${id}/status`, { status });
+      setSuccess(status === 'completed' ? 'Завдання зараховано!' : 'Повернуто на доопрацювання');
+      await fetchQuests();
+    } catch(e: any) { setError(e.response?.data?.error || 'Помилка перевірки завдання'); }
+  };
+
   const tabs = [
     { id: 'browse' as const, label: 'Знайти менторів', icon: '🔍' },
     { id: 'my-requests' as const, label: 'Мої запити', icon: '📋' },
+    { id: 'quests' as const, label: 'Бойові квести', icon: '🎯' },
     { id: 'create' as const, label: 'Новий запит', icon: '✉️' },
   ];
 
@@ -138,12 +190,12 @@ export const MentorshipPage: React.FC = () => {
       <div
         className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333] animate-fade-in-up"
       >
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setError(''); setSuccess(''); }}
-              className="btn font-bold uppercase tracking-widest"
+              className="btn w-full flex items-center justify-center text-center font-bold uppercase tracking-widest"
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -323,6 +375,111 @@ export const MentorshipPage: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Quests (Task Tracker) */}
+      {activeTab === 'quests' && (
+        <div className="animate-fade-in-up max-w-4xl mx-auto">
+          <div className="mb-6 p-6 bg-[#0a0a0a] border border-[#333]">
+            <h2 className="text-xl font-heading font-black uppercase tracking-widest text-[var(--ab3-gold)] mb-2">БОЙОВІ ЗАВДАННЯ ВІД МЕНТОРА</h2>
+            <p className="text-gray-400 font-mono text-sm leading-relaxed">Виконуйте практичні нормативи, призначені вашим наставником, щоб здобувати бойовий досвід (XP) та підвищувати кваліфікацію.</p>
+          </div>
+
+          {/* Form for mentors */}
+          {isMentorAllowed && (
+            <div className="mb-8 p-6 bg-[#111] border border-[var(--ab3-gold)] shadow-lg">
+              <h3 className="text-lg font-heading font-black uppercase tracking-widest text-[var(--ab3-gold)] mb-4">Призначити завдання підопічному</h3>
+              
+              {mentees.length === 0 ? (
+                <div className="p-6 border border-red-900/50 bg-red-900/10 text-center">
+                  <p className="text-red-500 font-mono text-sm uppercase tracking-widest font-bold mb-2">⚠️ У ВАС ПОКИ НЕМАЄ АКТИВНИХ ПІДОПІЧНИХ</p>
+                  <p className="text-gray-400 font-mono text-xs uppercase tracking-widest leading-relaxed">
+                    Перейдіть у <strong className="text-white">«Панель Ментора»</strong> (в боковому меню управління), щоб прийняти запити від новобранців. Після цього ви зможете призначати їм бойові квести.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleCreateQuest} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-gray-500 mb-1">Підопічний *</label>
+                  <select className="input w-full" value={newQuest.recruitId} onChange={e => setNewQuest({...newQuest, recruitId: e.target.value})} required>
+                    <option value="">-- Оберіть бійця --</option>
+                    {mentees.map(m => <option key={m.id} value={m.id}>{m.rank} {m.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-gray-500 mb-1">Нагорода (XP) *</label>
+                  <input type="number" className="input w-full" value={newQuest.xp} onChange={e => setNewQuest({...newQuest, xp: parseInt(e.target.value) || 0})} min="10" max="1000" required />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-mono text-gray-500 mb-1">Назва завдання *</label>
+                  <input className="input w-full" value={newQuest.title} onChange={e => setNewQuest({...newQuest, title: e.target.value})} placeholder="Напр. Розбирання АК-74" required />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-mono text-gray-500 mb-1">Опис та умови виконання</label>
+                  <textarea className="input w-full" rows={2} value={newQuest.desc} onChange={e => setNewQuest({...newQuest, desc: e.target.value})} placeholder="Вкластися в 15 секунд..."></textarea>
+                </div>
+                <div className="md:col-span-2 mt-2">
+                  <button type="submit" disabled={loading} className="w-full bg-[var(--ab3-gold)] text-black font-bold font-mono uppercase tracking-widest py-3 hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(201,162,39,0.2)]">
+                    {loading ? 'ОБРОБКА...' : 'ПРИЗНАЧИТИ КВЕСТ'}
+                  </button>
+                </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {quests.length === 0 ? (
+              <div className="p-10 border border-[#333] bg-[#0a0a0a] text-center font-mono text-gray-500 uppercase tracking-widest">
+                Бойових завдань поки немає.
+              </div>
+            ) : (
+              quests.map(quest => {
+                const isMyQuest = quest.recruitId === user?.id;
+                const isAssignedByMe = quest.mentorId === user?.id;
+                
+                return (
+                  <div key={quest.id} className="p-6 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)] transition-colors flex flex-col md:flex-row items-start md:items-center justify-between gap-6 group">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-heading font-black uppercase tracking-widest text-white group-hover:text-[var(--ab3-gold)] transition-colors">{quest.title}</h3>
+                        <span className="px-2 py-0.5 bg-[#111] border border-[var(--ab3-gold)] text-[var(--ab3-gold)] text-[10px] font-mono font-bold">+{quest.xp} XP</span>
+                      </div>
+                      <p className="text-gray-400 text-sm font-mono mb-3">{quest.description || quest.desc}</p>
+                      
+                      <div className="text-[10px] font-mono text-gray-500 flex gap-4">
+                        {isMyQuest && <span>МЕНТОР: {quest.mentorRank || ''} {quest.mentorLastName || ''}</span>}
+                        {isAssignedByMe && <span>ВИКОНАВЕЦЬ: {quest.recruitRank || ''} {quest.recruitLastName || ''}</span>}
+                        <span>ДАТА: {new Date(quest.createdAt).toLocaleDateString('uk-UA')}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-full md:w-auto flex-shrink-0 flex flex-col gap-2">
+                      {quest.status === 'completed' && (
+                        <div className="px-6 py-3 bg-green-900/20 border border-green-900 text-green-500 font-mono text-xs font-bold uppercase tracking-widest text-center">✅ Зараховано</div>
+                      )}
+                      {quest.status === 'review' && isMyQuest && (
+                        <div className="px-6 py-3 bg-blue-900/20 border border-blue-900 text-blue-400 font-mono text-xs font-bold uppercase tracking-widest text-center">⏳ Перевіряється</div>
+                      )}
+                      {quest.status === 'review' && isAssignedByMe && (
+                        <div className="flex gap-2">
+                          <button onClick={() => reviewQuest(quest.id, 'completed')} className="px-4 py-3 bg-green-600 hover:bg-green-500 text-white font-mono text-[10px] font-bold uppercase tracking-widest transition-colors">ЗАРАХУВАТИ</button>
+                          <button onClick={() => reviewQuest(quest.id, 'pending')} className="px-4 py-3 bg-red-900/30 border border-red-900 text-red-500 hover:bg-red-600 hover:text-white font-mono text-[10px] font-bold uppercase tracking-widest transition-colors">ВІДХИЛИТИ</button>
+                        </div>
+                      )}
+                      {quest.status === 'pending' && isMyQuest && (
+                        <button onClick={() => completeQuest(quest.id)} className="w-full md:w-auto px-6 py-3 bg-[var(--ab3-gold)] hover:bg-yellow-400 text-black font-mono text-xs font-bold uppercase tracking-widest transition-colors shadow-[0_0_15px_rgba(201,162,39,0.2)]">ВІДЗВІТУВАТИ</button>
+                      )}
+                      {quest.status === 'pending' && isAssignedByMe && (
+                        <div className="px-6 py-3 bg-[#111] border border-[#333] text-gray-500 font-mono text-xs font-bold uppercase tracking-widest text-center">В ПРОЦЕСІ</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 

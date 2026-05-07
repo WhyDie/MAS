@@ -168,12 +168,12 @@ export const PsychologicalSupportPage: React.FC = () => {
         className="p-3 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
         style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
       >
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setError(''); setSuccess(''); }}
-              className="btn transition-all duration-300 hover:scale-105 active:scale-95"
+              className="btn w-full flex items-center justify-center text-center transition-all duration-300 hover:scale-105 active:scale-95"
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -268,7 +268,7 @@ export const PsychologicalSupportPage: React.FC = () => {
               <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
                 Тип контакту
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { type: 'identified' as const, label: '👤 Ідентифікований' },
                   { type: 'anonymous' as const, label: '🔍 Анонімний' },
@@ -277,7 +277,7 @@ export const PsychologicalSupportPage: React.FC = () => {
                     key={option.type}
                     type="button"
                     onClick={() => setContactType(option.type)}
-                    className="btn"
+                    className="btn w-full flex items-center justify-center text-center"
                     style={{
                       background: contactType === option.type ? 'var(--gradient-gold)' : 'transparent',
                       color: contactType === option.type ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -491,21 +491,22 @@ export const PsychologicalSupportPage: React.FC = () => {
             {audioTracks.map((track, index) => (
               <div
                 key={track.id}
-                className="military-card p-6 animate-fade-in-up transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(236,72,153,0.3)] relative overflow-hidden group"
+                className="military-card h-full flex flex-col p-6 animate-fade-in-up transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(236,72,153,0.3)] relative overflow-hidden group"
                 style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-none flex items-center justify-center" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="2"/><circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2"/><circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="2"/></svg>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-none flex items-center justify-center" style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="2"/><circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="2"/><circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="2"/></svg>
+                    </div>
+                    <h3 className="text-lg font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>{track.title}</h3>
                   </div>
-                  <h3 className="text-lg font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '17px' }}>{track.title}</h3>
+                  <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+                    {track.description}
+                  </p>
                 </div>
 
-                <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
-                  {track.description}
-                </p>
-
-                <div className="flex justify-between items-center">
+                <div className="mt-auto w-full flex justify-between items-center pt-4 border-t border-[#222]">
                   <span className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                     ⏱️ {Math.round(track.duration / 60)} хв
                   </span>

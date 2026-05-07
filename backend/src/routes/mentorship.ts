@@ -1,85 +1,296 @@
 import { Router } from 'express';
-import { MentorshipController } from '../controllers/MentorshipController';
-import { authMiddleware, roleMiddleware } from '../middleware/auth';
+import { AppDataSource } from '../config/database';
+import { sendSuccess, sendError } from '../utils/response';
+import jwt from 'jsonwebtoken';
+import * as crypto from 'crypto';
 
 const router = Router();
 
-/**
- * POST /api/mentorship/requests
- * Create new mentorship request (recruits only)
- */
-router.post('/requests', authMiddleware, roleMiddleware('recruit'), MentorshipController.createRequest);
+const getUserId = (req: any) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) throw new Error('Unauthorized');
+  const token = authHeader.split(' ')[1];
+  const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+  return String(decoded.userId || decoded.id || decoded.tempId);
+};
 
-/**
- * GET /api/mentorship/requests/open
- * Get open mentorship requests (anyone can view)
- */
-router.get('/requests/open', authMiddleware, MentorshipController.getOpenRequests);
+// Отримати всі запити (для ментора)
+router.get('/requests', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const requests = await AppDataSource.query(`SELECT m.* FROM "mentorship_requests" m JOIN "users" u ON m."recruitId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY m."createdAt" DESC`, [userId]);
+    sendSuccess(res, requests);
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
+  }
+});
 
-/**
- * GET /api/mentorship/mentor/requests
- * Get mentor's assigned requests
- */
-router.get('/mentor/requests', authMiddleware, roleMiddleware('mentor'), MentorshipController.getMentorRequests);
+// Отримати ВСІ запити системи (для пошуку нічийних)
+router.get('/all-requests', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const rows = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."rank" FROM "mentorship_requests" m LEFT JOIN "users" u ON m."recruitId" = u."id" WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY m."createdAt" DESC`, [userId]);
+    sendSuccess(res, rows.map((r: any) => ({ ...r, recruit: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })));
+  } catch (e) { 
+    sendError(res, 'Помилка сервера', 500); 
+  }
+});
 
-/**
- * GET /api/mentorship/recruit/requests
- * Get recruit's mentorship requests
- */
-router.get('/recruit/requests', authMiddleware, roleMiddleware('recruit'), MentorshipController.getRecruitRequests);
+// Оновити статус запиту (для ментора)
+router.put('/requests/:id/status', async (req, res) => {
+  try {
+    const { status, response } = req.body;
+    await AppDataSource.query(
+      'UPDATE "mentorship_requests" SET "status" = ?, "response" = ?, "respondedAt" = CURRENT_TIMESTAMP WHERE "id" = ?',
+      [status, response || null, req.params.id]
+    );
+    sendSuccess(res, null, 'Оновлено');
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
+  }
+});
 
-/**
- * POST /api/mentorship/requests/:id/accept
- * Accept mentorship request (mentors only)
- */
-router.post('/requests/:id/accept', authMiddleware, roleMiddleware('mentor'), MentorshipController.acceptRequest);
+// Отримати список підопічних
+router.get('/mentees', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const mentorId = String(decoded.userId || decoded.tempId);
 
-/**
- * POST /api/mentorship/requests/:id/respond
- * Respond to mentorship request (mentors only)
- */
-router.post('/requests/:id/respond', authMiddleware, roleMiddleware('mentor'), MentorshipController.respondToRequest);
+    const mentees = await AppDataSource.query(
+      `SELECT DISTINCT u.id, u."firstName", u."lastName", u.rank, m.status 
+       FROM "mentorship_requests" m 
+       JOIN "users" u ON m."recruitId" = u.id 
+       WHERE m."mentorId" = ? AND m.status IN ('in_progress', 'assigned')`,
+      [mentorId]
+    );
 
-/**
- * POST /api/mentorship/requests/:id/complete
- * Complete mentorship request
- */
-router.post('/requests/:id/complete', authMiddleware, MentorshipController.completeRequest);
+    let totalModules = 1;
+    try {
+      const modulesCount = await AppDataSource.query(`SELECT COUNT(*) as cnt FROM "training_modules" WHERE "isActive" = 1`);
+      if (modulesCount[0] && modulesCount[0].cnt > 0) totalModules = parseInt(modulesCount[0].cnt);
+    } catch(e) {}
 
-/**
- * POST /api/mentorship/requests/:id/cancel
- * Cancel mentorship request
- */
-router.post('/requests/:id/cancel', authMiddleware, MentorshipController.cancelRequest);
+    const formattedMentees = await Promise.all(mentees.map(async (m: any) => {
+      let progress = 0;
+      try {
+        const progRes = await AppDataSource.query(`SELECT COUNT(*) as cnt FROM "xt_user_progress" WHERE "userId" = ? AND "status" = 'completed'`, [m.id]);
+        const completed = progRes[0] ? parseInt(progRes[0].cnt) : 0;
+        progress = Math.min(100, Math.round((completed / totalModules) * 100));
+      } catch(e) {}
+      
+      return { id: m.id, name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || 'Невідомий', rank: m.rank || 'Боєць', status: m.status === 'in_progress' ? 'Активне менторство' : m.status, progress: progress > 0 ? progress : 5 };
+    }));
 
-/**
- * POST /api/mentorship/requests/:id/feedback
- * Add feedback to mentorship
- */
-router.post('/requests/:id/feedback', authMiddleware, MentorshipController.addFeedback);
+    sendSuccess(res, formattedMentees);
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
+  }
+});
 
-/**
- * GET /api/mentorship/mentors/available
- * Get available mentors
- */
-router.get('/mentors/available', authMiddleware, MentorshipController.getAvailableMentors);
+// Створити новий запит (для бійця)
+const createRequest = async (req: any, res: any) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const userId = String(decoded.userId || decoded.id || decoded.tempId);
 
-/**
- * GET /api/mentorship/mentors/search
- * Search mentors by skills
- */
-router.get('/mentors/search', authMiddleware, MentorshipController.searchMentors);
+    const mentorId = req.body.mentorId || null;
+    const status = mentorId ? 'assigned' : 'open';
+    const topic = req.body.topic || 'Загальне питання';
+    const description = req.body.description || req.body.text || '';
+    const id = crypto.randomUUID();
 
-/**
- * GET /api/mentorship/mentor/stats
- * Get mentor statistics
- */
-router.get('/mentor/stats', authMiddleware, roleMiddleware('mentor'), MentorshipController.getMentorStats);
+    await AppDataSource.query(`
+      CREATE TABLE IF NOT EXISTS "mentorship_requests" (
+        "id" varchar PRIMARY KEY,
+        "recruitId" varchar,
+        "mentorId" varchar,
+        "topic" varchar,
+        "description" text,
+        "response" text,
+        "status" varchar,
+        "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+        "respondedAt" datetime
+      )
+    `).catch(() => {});
 
-/**
- * GET /api/mentorship/recommend
- * Get recommended mentor for recruit
- */
-router.get('/recommend', authMiddleware, roleMiddleware('recruit'), MentorshipController.getRecommendedMentor);
+    await AppDataSource.query(
+      'INSERT INTO "mentorship_requests" ("id", "recruitId", "mentorId", "topic", "description", "status", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, userId, mentorId, topic, description, status, new Date().toISOString()]
+    );
+
+    const saved = await AppDataSource.query('SELECT * FROM "mentorship_requests" WHERE id = ?', [id]);
+    sendSuccess(res, saved[0], 'Запит створено', 201);
+  } catch (error) {
+    console.error('Mentor request err:', error);
+    sendError(res, 'Помилка створення запиту', 500);
+  }
+};
+
+router.post('/requests', createRequest);
+router.post('/request', createRequest);
+
+router.post('/requests/:id/assign', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const mentorId = String(decoded.userId || decoded.tempId);
+
+    await AppDataSource.query('UPDATE "mentorship_requests" SET "mentorId" = ?, "status" = ? WHERE "id" = ?', [mentorId, 'in_progress', req.params.id]);
+    sendSuccess(res, null, 'Успішно призначено');
+  } catch (error) {
+    sendError(res, 'Помилка сервера', 500);
+  }
+});
+
+// Отримати доступних менторів
+router.get('/mentors/available', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { topic } = req.query;
+    
+    let query = `
+      SELECT u.id, u."firstName", u."lastName", u.rank, u.position, u.role, u."profilePictureUrl",
+             COUNT(CASE WHEN m.status IN ('completed', 'in_progress') THEN 1 END) as "completedRequests",
+             AVG(CASE WHEN m.status = 'completed' THEN m."rating" END) as "rating"
+      FROM "users" u
+      LEFT JOIN "mentorship_requests" m ON u.id = m."mentorId" AND m.status IN ('completed', 'in_progress')
+      WHERE u.role IN ('mentor', 'commander', 'admin')
+      AND u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?)
+    `;
+    
+    const params: any[] = [userId];
+    
+    if (topic) {
+      query += ` AND (u.position LIKE ? OR u."civilProfession" LIKE ?)`;
+      params.push(`%${topic}%`, `%${topic}%`);
+    }
+    
+    query += ` GROUP BY u.id ORDER BY "rating" DESC, "completedRequests" DESC`;
+    
+    const mentors = await AppDataSource.query(query, params);
+    
+    const formattedMentors = mentors.map((mentor: any) => ({
+      id: mentor.id,
+      name: `${mentor.firstName || ''} ${mentor.lastName || ''}`.trim() || 'Ментор',
+      firstName: mentor.firstName,
+      lastName: mentor.lastName,
+      rank: mentor.rank,
+      position: mentor.position,
+      profilePictureUrl: mentor.profilePictureUrl,
+      completedRequests: parseInt(mentor.completedRequests) || 0,
+      rating: mentor.rating ? Math.round(mentor.rating * 10) / 10 : 0,
+      availability: true,
+      skills: mentor.position ? [mentor.position] : []
+    }));
+    
+    sendSuccess(res, formattedMentors);
+  } catch (error) {
+    console.error('Error fetching available mentors:', error);
+    sendError(res, 'Помилка при завантаженні менторів', 500);
+  }
+});
+
+// Отримати мої запити
+router.get('/recruit/requests', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return sendError(res, 'Unauthorized', 401);
+    
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const userId = String(decoded.userId || decoded.id || decoded.tempId);
+
+    const requests = await AppDataSource.query(
+      `SELECT m.*, u."firstName", u."lastName", u.rank 
+       FROM "mentorship_requests" m 
+       LEFT JOIN "users" u ON m."mentorId" = u.id 
+       WHERE m."recruitId" = ?
+       ORDER BY m."createdAt" DESC`,
+      [userId]
+    );
+
+    const formattedRequests = requests.map((r: any) => ({
+      ...r,
+      mentor: r.mentorId ? {
+        id: r.mentorId,
+        name: `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Ментор',
+        rank: r.rank
+      } : null
+    }));
+
+    sendSuccess(res, formattedRequests);
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    sendError(res, 'Помилка при завантаженні запитів', 500);
+  }
+});
+
+// --- БОЙОВІ КВЕСТИ (TASK TRACKER) ---
+
+const ensureQuestsTable = async () => {
+  await AppDataSource.query(`
+    CREATE TABLE IF NOT EXISTS "mentorship_quests" (
+      "id" varchar PRIMARY KEY,
+      "mentorId" varchar NOT NULL,
+      "recruitId" varchar NOT NULL,
+      "title" varchar NOT NULL,
+      "description" text,
+      "xp" integer DEFAULT 0,
+      "status" varchar DEFAULT 'pending',
+      "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+    )
+  `).catch(() => {});
+};
+
+// Отримати квести (як ментора, так і бійця)
+router.get('/quests', async (req, res) => {
+  try {
+    await ensureQuestsTable();
+    const userId = getUserId(req);
+    
+    const quests = await AppDataSource.query(`
+      SELECT q.*, 
+             m."lastName" as "mentorLastName", m.rank as "mentorRank",
+             r."lastName" as "recruitLastName", r.rank as "recruitRank"
+      FROM "mentorship_quests" q
+      LEFT JOIN "users" m ON q."mentorId" = m.id
+      LEFT JOIN "users" r ON q."recruitId" = r.id
+      WHERE q."mentorId" = ? OR q."recruitId" = ?
+      ORDER BY q."createdAt" DESC
+    `, [userId, userId]);
+
+    sendSuccess(res, quests);
+  } catch (error) { sendError(res, 'Помилка завантаження квестів', 500); }
+});
+
+// Створити квест (тільки для ментора)
+router.post('/quests', async (req, res) => {
+  try {
+    await ensureQuestsTable();
+    const mentorId = getUserId(req);
+    const { recruitId, title, description, xp } = req.body;
+    if (!recruitId || !title) return sendError(res, 'Всі поля обов\'язкові', 400);
+    const id = crypto.randomUUID();
+    await AppDataSource.query('INSERT INTO "mentorship_quests" ("id", "mentorId", "recruitId", "title", "description", "xp", "status") VALUES (?, ?, ?, ?, ?, ?, ?)', [id, mentorId, recruitId, title, description, xp || 100, 'pending']);
+    sendSuccess(res, { id }, 'Квест призначено');
+  } catch (error) { sendError(res, 'Помилка створення квесту', 500); }
+});
+
+// Оновити статус квесту (для звітування та перевірки)
+router.put('/quests/:id/status', async (req, res) => {
+  try {
+    await AppDataSource.query('UPDATE "mentorship_quests" SET "status" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?', [req.body.status, req.params.id]);
+    sendSuccess(res, null, 'Статус оновлено');
+  } catch (error) { sendError(res, 'Помилка оновлення статусу', 500); }
+});
 
 export default router;

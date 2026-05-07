@@ -34,13 +34,18 @@ export class UserController {
       await userRepository.save(user);
 
       await AppDataSource.query('INSERT INTO "user_ext" ("userId", "callsign") VALUES (?, ?) ON CONFLICT("userId") DO UPDATE SET "callsign" = excluded."callsign"', [user.id, callsign || '']);
-      const rawUser = await AppDataSource.query('SELECT * FROM "user_ext" WHERE "userId" = ?', [user.id]);
+      const rawUserResult = await AppDataSource.query('SELECT * FROM "user_ext" WHERE "userId" = ?', [user.id]);
+      const userExt = rawUserResult[0] || {};
 
       const { passwordHash, ...userWithoutPassword } = user;
       const updatedUser = {
         ...userWithoutPassword,
         callsign: callsign || '',
-        twoFactorStatus: { isAuthenticatorEnabled: !!rawUser[0]?.isAuthenticatorEnabled, isEmailCodeEnabled: !!rawUser[0]?.isEmailCodeEnabled, isBiometricsEnabled: !!rawUser[0]?.isBiometricsEnabled }
+        twoFactorStatus: { 
+          isAuthenticatorEnabled: !!userExt.isAuthenticatorEnabled, 
+          isEmailCodeEnabled: !!userExt.isEmailCodeEnabled, 
+          isBiometricsEnabled: !!userExt.isBiometricsEnabled 
+        }
       };
 
       sendSuccess(res, updatedUser, 'Профіль успішно оновлено');
@@ -83,7 +88,8 @@ export class UserController {
       const user = await userRepository.findOne({ where: { id: (req.user as any).userId } });
       if (!user) { sendError(res, 'Користувача не знайдено', 404); return; }
 
-      await userRepository.remove(user);
+      user.isActive = false; // М'яке видалення, щоб не ламати пов'язані таблиці (статистику, розклад)
+      await userRepository.save(user);
       sendSuccess(res, null, 'Акаунт успішно видалено');
     } catch (error) {
       sendError(res, error instanceof Error ? error.message : 'Помилка видалення акаунту', 500);

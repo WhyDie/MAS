@@ -12,12 +12,18 @@ export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // 2FA states
-  const [loginStep, setLoginStep] = useState<'credentials' | '2fa'>('credentials');
+  const [loginStep, setLoginStep] = useState<'credentials' | '2fa' | 'forgot-request' | 'forgot-confirm'>('credentials');
   const [tempToken, setTempToken] = useState('');
   const [available2FAMethods, setAvailable2FAMethods] = useState<string[]>([]);
   const [selected2FAMethod, setSelected2FAMethod] = useState<string>('');
   const [twoFaCode, setTwoFaCode] = useState('');
   const [emailCodeSent, setEmailCodeSent] = useState(false);
+  
+  // Forgot password states
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string} | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +94,38 @@ export const LoginForm: React.FC = () => {
       if (!assertion) return; // Користувач скасував
       handleVerify2FA(undefined, assertion.id);
     } catch (err) { setError('Не вдалося перевірити біометрію.'); }
+  };
+
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true); setError(null);
+    try {
+      const res = await api.post('/auth/password-reset/request', { email: resetEmail });
+      setModal({ isOpen: true, title: 'ЗАПИТ ВІДПРАВЛЕНО', message: res.data.message || 'Запит відправлено адміністратору. Очікуйте.' });
+      setLoginStep('forgot-confirm');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Помилка відправки запиту.');
+    } finally { setIsLoading(false); }
+  };
+
+  const handleForgotConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) return setError('Мінімум 6 символів');
+    setIsLoading(true); setError(null);
+    try {
+      const res = await api.post('/auth/password-reset/confirm', { 
+        email: resetEmail, 
+        code: resetCode, 
+        newPassword 
+      });
+      setModal({ isOpen: true, title: 'ПАРОЛЬ ЗМІНЕНО', message: res.data.message || 'Пароль успішно змінено!' });
+      setResetEmail('');
+      setResetCode('');
+      setNewPassword('');
+      setLoginStep('credentials');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Помилка відновлення пароля.');
+    } finally { setIsLoading(false); }
   };
 
   return (
@@ -175,8 +213,13 @@ export const LoginForm: React.FC = () => {
               <button type="submit" disabled={isLoading} className="btn btn-primary rounded-none uppercase tracking-widest font-bold w-full disabled:opacity-50 disabled:cursor-not-allowed py-4 text-base">
                 {isLoading ? 'Вхід...' : 'Увійти'}
               </button>
+              <div className="text-center mt-4">
+                <button type="button" onClick={() => setLoginStep('forgot-request')} className="text-xs font-mono text-gray-500 hover:text-[var(--ab3-gold)] transition-colors uppercase tracking-widest">
+                  [ Забули пароль? ]
+                </button>
+              </div>
             </form>
-          ) : (
+          ) : loginStep === '2fa' ? (
             // --- 2FA STEP ---
             <form onSubmit={handleVerify2FA} className="space-y-6 animate-scale-in">
               <div className="p-4 bg-[#111] border border-[#333] mb-4">
@@ -216,6 +259,37 @@ export const LoginForm: React.FC = () => {
                 </button>
               )}
               <button type="button" onClick={() => setLoginStep('credentials')} className="w-full text-center text-xs text-gray-500 mt-4 hover:text-white">Скасувати</button>
+            </form>
+          ) : loginStep === 'forgot-request' ? (
+            // --- FORGOT PASSWORD REQUEST ---
+            <form onSubmit={handleForgotRequest} className="space-y-6 animate-scale-in">
+              <p className="text-sm font-mono text-gray-400 text-center uppercase tracking-widest mb-4">
+                ВВЕДІТЬ EMAIL ДЛЯ ЗАПИТУ ДО АДМІНІСТРАТОРА
+              </p>
+              <div>
+                <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} className="input text-center font-mono" placeholder="EMAIL" required />
+              </div>
+              <button type="submit" disabled={isLoading} className="btn bg-[var(--ab3-gold)] text-black w-full py-4 font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(201,162,39,0.2)]">
+                {isLoading ? 'ОБРОБКА...' : 'ВІДПРАВИТИ ЗАПИТ'}
+              </button>
+              <button type="button" onClick={() => setLoginStep('credentials')} className="w-full text-center text-xs font-mono text-gray-500 hover:text-white uppercase tracking-widest mt-2">← ПОВЕРНУТИСЯ</button>
+            </form>
+          ) : (
+            // --- FORGOT PASSWORD CONFIRM ---
+            <form onSubmit={handleForgotConfirm} className="space-y-6 animate-scale-in">
+              <div className="p-4 bg-yellow-950/20 border border-yellow-900 mb-4 text-center">
+                <p className="text-[10px] font-mono text-yellow-500 uppercase tracking-widest">
+                  Якщо Адміністратор підтвердив ваш запит, ви отримали код на пошту (або особисто). Введіть його нижче.
+                </p>
+              </div>
+              <div>
+                <input type="text" value={resetCode} onChange={(e) => setResetCode(e.target.value)} className="input text-center text-xl tracking-[0.5em] font-mono mb-4" placeholder="КОД (6 ЦИФР)" required />
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input text-center font-mono" placeholder="НОВИЙ ПАРОЛЬ" required />
+              </div>
+              <button type="submit" disabled={isLoading || resetCode.length < 5} className="btn bg-[var(--ab3-gold)] text-black w-full py-4 font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(201,162,39,0.2)]">
+                {isLoading ? 'ОБРОБКА...' : 'ВСТАНОВИТИ ПАРОЛЬ'}
+              </button>
+              <button type="button" onClick={() => setLoginStep('forgot-request')} className="w-full text-center text-xs font-mono text-gray-500 hover:text-white uppercase tracking-widest mt-2">← СТВОРИТИ НОВИЙ ЗАПИТ</button>
             </form>
           )}
 

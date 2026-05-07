@@ -63,8 +63,9 @@ export const ScheduleAdminPage: React.FC = () => {
     try {
       setLoading(true);
       // Get events for a wide date range
-      const startDate = '2026-01-01';
-      const endDate = '2026-12-31';
+      const currentYear = new Date().getFullYear();
+      const startDate = `${currentYear - 1}-01-01`;
+      const endDate = `${currentYear + 2}-12-31`;
       const res = await api.get(`/schedule/events?startDate=${startDate}&endDate=${endDate}`);
       const data = res.data.data || res.data || [];
       setEvents(data);
@@ -102,26 +103,9 @@ export const ScheduleAdminPage: React.FC = () => {
       if (editingEvent) {
         await api.put(`/schedule/events/${editingEvent.id}`, form);
         setSuccess('Подію оновлено');
-        // TODO: Надіслати сповіщення про оновлення події
       } else {
-        const res = await api.post('/schedule/events', form); // Зберігаємо результат для отримання ID нової події
+        await api.post('/schedule/events', form);
         setSuccess('Подію додано');
-        const newEvent = res.data.data; // Припускаємо, що API повертає створену подію
-
-        // --- Логіка надсилання сповіщення ---
-        // Тут ми імітуємо надсилання сповіщення. У реальній програмі це буде API-виклик до бекенд-сервісу сповіщень.
-        console.log('Sending notification for new event:', newEvent);
-        // Приклад даних сповіщення, які ви б надіслали на бекенд:
-        // notificationService.send({
-        //   type: 'new_schedule_event',
-        //   actor: { id: user?.id, name: user?.firstName || 'Адмін', role: user?.role },
-        //   payload: {
-        //     eventId: newEvent.id,
-        //     eventTitle: newEvent.title,
-        //     eventDate: newEvent.startTime.split('T')[0],
-        //   },
-        //   targetUnitId: form.unitId, // Або всім користувачам підрозділу
-        // });
       }
       setShowForm(false);
       loadEvents();

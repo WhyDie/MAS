@@ -96,7 +96,7 @@ export const EquipmentPage: React.FC = () => {
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+        <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3 glitch-hover cursor-default transition-all duration-300" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
           ЕКІПІРУВАННЯ ТА ЛОГІСТИКА
         </h1>
         <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
@@ -145,12 +145,12 @@ export const EquipmentPage: React.FC = () => {
 
       {/* Tabs */}
       <div className="p-3 rounded-none mb-8 bg-[#0a0a0a] border border-[#333] animate-fade-in-up">
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="btn font-bold uppercase tracking-widest"
+              className="btn w-full flex items-center justify-center text-center font-bold uppercase tracking-widest"
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -169,10 +169,10 @@ export const EquipmentPage: React.FC = () => {
       {activeTab === 'inventory' && (
         <div className="animate-fade-in-up">
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-6">
             <button
               onClick={() => setSelectedCategory('all')}
-              className="btn uppercase tracking-widest font-bold"
+              className="btn w-full flex items-center justify-center text-center uppercase tracking-widest font-bold"
               style={{ background: selectedCategory === 'all' ? '#222' : 'transparent', color: selectedCategory === 'all' ? '#fff' : 'var(--text-muted)', border: `1px solid ${selectedCategory === 'all' ? '#555' : '#333'}`, padding: '6px 12px', fontSize: '11px' }}
             >
               Усі категорії
@@ -181,7 +181,7 @@ export const EquipmentPage: React.FC = () => {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className="btn uppercase tracking-widest font-bold"
+                className="btn w-full flex items-center justify-center text-center uppercase tracking-widest font-bold"
                 style={{ background: selectedCategory === cat ? '#222' : 'transparent', color: selectedCategory === cat ? '#fff' : 'var(--text-muted)', border: `1px solid ${selectedCategory === cat ? '#555' : '#333'}`, padding: '6px 12px', fontSize: '11px' }}
               >
                 {categoryIcons[cat] || '📦'} {cat}
@@ -198,8 +198,8 @@ export const EquipmentPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredEquipment.map((item, i) => (
-                <div key={item.id} className="military-card p-5 bg-[#0a0a0a] border border-[#333] transition-all hover:border-[var(--ab3-gold)] flex flex-col justify-between" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
-                  <div>
+                <div key={item.id} className="military-card h-full p-5 bg-[#0a0a0a] border border-[#333] transition-all hover:border-[var(--ab3-gold)] flex flex-col justify-between" style={{ animationDelay: `${i * 0.05}s`, animationFillMode: 'both' }}>
+                  <div className="flex-1">
                     <div className="flex justify-between items-start mb-4">
                       <div className="w-12 h-12 bg-[#111] border border-[#333] flex items-center justify-center text-2xl">
                         {categoryIcons[item.category] || '📦'}
@@ -210,7 +210,7 @@ export const EquipmentPage: React.FC = () => {
                     <p className="text-xs font-mono text-gray-500 mb-4">{item.category}</p>
                   </div>
                   
-                  <div className="flex justify-between items-center pt-4 border-t border-[#222]">
+                  <div className="mt-auto w-full flex justify-between items-center pt-4 border-t border-[#222]">
                     <div className="font-mono text-sm text-[var(--ab3-gold)] font-bold">
                       ⚖️ {item.weight} кг
                     </div>

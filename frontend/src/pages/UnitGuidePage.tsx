@@ -102,12 +102,12 @@ export const UnitGuidePage: React.FC = () => {
         className="p-3 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
         style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
       >
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="btn"
+              className="btn w-full flex items-center justify-center text-center"
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -125,12 +125,12 @@ export const UnitGuidePage: React.FC = () => {
       {activeTab === 'rooms' && (
         <div className="animate-fade-in-up">
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 mb-6">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className="btn"
+                className="btn w-full flex items-center justify-center text-center"
                 style={{
                   background: selectedCategory === cat.id ? 'var(--gradient-gold)' : 'transparent',
                   color: selectedCategory === cat.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -166,23 +166,19 @@ export const UnitGuidePage: React.FC = () => {
               return (
                 <div
                   key={room.name}
-                  className="military-card rounded-none p-5 animate-fade-in-up bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:border-[var(--ab3-gold)]"
+                  className="military-card h-full flex flex-col items-center text-center rounded-none p-5 animate-fade-in-up bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:border-[var(--ab3-gold)]"
                   style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both', borderLeft: `4px solid ${floorColor}` }}
                 >
-                  <div className="flex items-start gap-3 mb-3">
+                  <div className="flex-1 flex flex-col items-center justify-center">
                     <span className="text-2xl">{room.icon}</span>
-                    <div className="flex-1">
-                      <h3 className="font-heading font-bold" style={{ color: 'var(--text-primary)', fontSize: '15px', lineHeight: '1.3' }}>
-                        {room.name}
-                      </h3>
-                    </div>
+                    <h3 className="font-heading font-bold mt-2" style={{ color: 'var(--text-primary)', fontSize: '15px', lineHeight: '1.3' }}>
+                      {room.name}
+                    </h3>
+                    <p className="text-sm mt-2 line-clamp-3" style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.6' }}>
+                      {room.description}
+                    </p>
                   </div>
-
-                  <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.6' }}>
-                    {room.description}
-                  </p>
-
-                  <div className="flex gap-3 text-xs" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                  <div className="mt-auto w-full flex justify-center gap-3 text-xs pt-4 border-t border-[#222]" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                     {room.floor !== undefined && room.floor >= 0 && (
                       <span>
                         🏢 Поверх: <strong style={{ color: floorColor }}>{room.floor === 0 ? '1' : room.floor + 1}</strong>

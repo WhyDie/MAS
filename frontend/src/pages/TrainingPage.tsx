@@ -19,16 +19,17 @@ export const TrainingPage: React.FC = () => {
   const loadModules = async () => {
     setIsLoading(true);
     try {
-      const response = await trainingService.getAllModules(1, 20, selectedCategory);
+      const response = await trainingService.getAllModules(1, 100, selectedCategory);
       const data = response.data.data;
-      setModules(data || []);
+      const activeModules = (data || []).filter((m: TrainingModule) => (m as any).isActive !== false && (m as any).isActive !== 0);
+      setModules(activeModules);
 
-      for (const module of data || []) {
+      for (const module of activeModules) {
         await offlineStorage.saveModule(module);
       }
     } catch (error) {
       const cached = await offlineStorage.getAllModules();
-      setModules(cached);
+      setModules(cached.filter((m: any) => (m as any).isActive !== false && (m as any).isActive !== 0));
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +62,7 @@ export const TrainingPage: React.FC = () => {
       <div className="mb-8">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
+            <h1 className="text-3xl font-heading font-black uppercase tracking-widest mb-3 glitch-hover cursor-default transition-all duration-300" style={{ color: 'var(--text-primary)', fontSize: '32px', lineHeight: '1.2' }}>
               НАВЧАЛЬНІ МОДУЛІ
             </h1>
             <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
@@ -79,12 +80,12 @@ export const TrainingPage: React.FC = () => {
         className="p-4 rounded-none mb-8 animate-fade-in-up bg-[#0a0a0a] border border-[#333]"
         style={{ animationDelay: '0.1s', animationFillMode: 'both' }}
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
           {categories.map((cat) => (
             <button
               key={cat.value}
               onClick={() => setSelectedCategory(cat.value)}
-              className="btn rounded-none uppercase tracking-widest font-bold"
+              className="btn w-full flex items-center justify-center text-center rounded-none uppercase tracking-widest font-bold"
               style={{
                 background: selectedCategory === cat.value ? 'var(--gradient-gold)' : 'transparent',
                 color: selectedCategory === cat.value ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -127,27 +128,27 @@ export const TrainingPage: React.FC = () => {
             <button
               key={module.id}
               onClick={() => navigate(`/training/${module.id}`)}
-              className="military-card rounded-none p-6 text-left group cursor-pointer animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)] relative overflow-hidden"
+              className="military-card h-full flex flex-col rounded-none p-6 text-left group cursor-pointer animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] hover:border-[var(--ab3-gold)] relative overflow-hidden"
               style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
             >
               <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
 
-              <div className="flex justify-between items-start mb-4">
-                {getDifficultyBadge(module.difficulty)}
-                <span className="text-[10px] px-3 py-1.5 rounded-none font-bold font-mono uppercase tracking-widest border border-[#333] bg-[#111]" style={{ color: 'var(--text-muted)' }}>
-                  ⏱ {module.durationMinutes} хв
-                </span>
+              <div className="flex-1">
+                <div className="flex justify-between items-start mb-4">
+                  {getDifficultyBadge(module.difficulty)}
+                  <span className="text-[10px] px-3 py-1.5 rounded-none font-bold font-mono uppercase tracking-widest border border-[#333] bg-[#111]" style={{ color: 'var(--text-muted)' }}>
+                    ⏱ {module.durationMinutes} хв
+                  </span>
+                </div>
+                <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-3 group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
+                  {module.title}
+                </h3>
+                <p className="font-mono text-xs mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                  {module.description}
+                </p>
               </div>
 
-              <h3 className="text-lg font-heading font-black uppercase tracking-widest mb-3 group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '17px', lineHeight: '1.3' }}>
-                {module.title}
-              </h3>
-
-              <p className="font-mono text-xs mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                {module.description}
-              </p>
-
-              <div className="flex justify-between items-center font-mono uppercase tracking-widest pt-4 border-t" style={{ borderColor: '#222', color: 'var(--text-muted)', fontSize: '10px' }}>
+              <div className="mt-auto w-full flex justify-between items-center font-mono uppercase tracking-widest pt-4 border-t" style={{ borderColor: '#222', color: 'var(--text-muted)', fontSize: '10px' }}>
                 <span className="text-[var(--ab3-gold)]">{module.category}</span>
                 <span>👁 {module.viewCount || 0}</span>
               </div>

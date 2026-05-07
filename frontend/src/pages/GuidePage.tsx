@@ -91,12 +91,12 @@ export function GuidePage() {
       </div>
 
       {/* Categories */}
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-8">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className="btn"
+            className="btn w-full flex items-center justify-center text-center"
             style={{
               background: selectedCategory === cat.id ? 'var(--gradient-gold)' : 'transparent',
               color: selectedCategory === cat.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -130,27 +130,25 @@ export function GuidePage() {
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
-            className="military-card rounded-none p-6 group animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] relative overflow-hidden"
+            className="military-card h-full flex flex-col text-center rounded-none p-6 group animate-fade-in-up transition-all duration-300 hover:-translate-y-1 bg-[#0a0a0a] border border-[#333] relative overflow-hidden"
             style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
             >
               <div className="absolute top-0 left-0 right-0 h-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'var(--gradient-gold)' }} />
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-14 h-14 rounded-none flex items-center justify-center text-2xl flex-shrink-0 bg-[#111] border border-[#333]">
+              <div className="flex-1 flex flex-col items-center">
+                <div className="w-16 h-16 rounded-none flex items-center justify-center text-3xl flex-shrink-0 bg-[#111] border border-[#333] mb-4">
                   {resource.icon || '🌐'}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold truncate group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '16px', lineHeight: '1.3' }}>
-                    {resource.name}
-                  </h3>
-                  <p className="text-xs truncate" style={{ color: 'var(--ab3-gold)', fontSize: '12px' }}>{resource.url}</p>
-                </div>
+                <h3 className="font-bold group-hover:text-[var(--ab3-gold)] transition-colors duration-300" style={{ color: 'var(--text-primary)', fontSize: '16px', lineHeight: '1.3' }}>
+                  {resource.name}
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--ab3-gold)', fontSize: '12px' }}>{new URL(resource.url).hostname}</p>
+                {resource.description && (
+                  <p className="text-sm mt-3 line-clamp-3" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
+                    {resource.description}
+                  </p>
+                )}
               </div>
-              {resource.description && (
-                <p className="text-sm mb-4 line-clamp-2" style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
-                  {resource.description}
-                </p>
-              )}
-              <div className="flex items-center justify-between">
+              <div className="mt-auto w-full flex items-center justify-center pt-4 border-t border-[#222]">
                 <span className="text-xs" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                   🔗 Перейти на сайт →
                 </span>

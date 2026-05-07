@@ -1,21 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '@services/api';
+import { useAuthStore } from '@stores/index';
 
 interface Announcement {
-  id: number;
+  id: string;
   title: string;
   text: string;
-  date: string;
+  createdAt: string;
   author: string;
   type: 'urgent' | 'info' | 'event' | 'warning';
 }
-
-const ANNOUNCEMENTS: Announcement[] = [
-  { id: 1, title: 'Бойова тривога! Навчальні збори', text: 'Усім командирам підрозділів терміново прибути до штабу. Особовому складу отримати зброю та вишикуватись на плацу в повній бойовій готовності.', date: 'Сьогодні, 08:00', author: 'Командир частини', type: 'urgent' },
-  { id: 2, title: 'Зміни в розпорядку', text: 'Починаючи з понеділка, 01.11.2023, відбувається перехід на зимовий час. Підйом особового складу переноситься на 06:30.', date: '25.10.2023', author: 'Начальник штабу', type: 'warning' },
-  { id: 3, title: 'Видача нового екіпірування', text: 'У вівторок на складі №2 буде проводитись видача зимових спальників та термобілизни. При собі обов\'язково мати військовий квиток. Графік видачі: 1-ша рота з 09:00 до 12:00, 2-га рота з 13:00 до 17:00.', date: '24.10.2023', author: 'Начальник логістики', type: 'info' },
-  { id: 4, title: 'Турнір з міні-футболу', text: 'Наступної неділі відбудеться товариський турнір з міні-футболу серед підрозділів нашої частини. Заявки на участь команд подавати заступнику з МПЗ до п\'ятниці.', date: '22.10.2023', author: 'Заступник з МПЗ', type: 'event' },
-  { id: 5, title: 'Візит комісії', text: 'У п\'ятницю очікується плановий візит перевіряючої комісії. Звернути увагу на порядок у казармах, стан форми одягу та зброї.', date: '20.10.2023', author: 'Командир частини', type: 'info' },
-];
 
 const typeConfig: Record<string, { label: string; color: string; icon: string }> = {
   urgent: { label: 'Терміново', color: '#ef4444', icon: '🚨' }, // red
@@ -25,26 +20,54 @@ const typeConfig: Record<string, { label: string; color: string; icon: string }>
 };
 
 export const NoticeBoardPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredAnnouncements = ANNOUNCEMENTS.filter(a => {
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/announcements');
+        setAnnouncements((res.data.data || res.data || []).sort((a: Announcement, b: Announcement) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      } catch (error) {
+        console.error("Failed to fetch announcements", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
+
+  const filteredAnnouncements = announcements.filter(a => {
     const matchesFilter = filter === 'all' || a.type === filter;
     const matchesSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           a.text.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
+  const canManage = user?.role === 'commander' || user?.role === 'admin' || user?.role === 'superadmin';
+
   return (
     <div className="animate-fade-in-up overflow-x-hidden">
       {/* Header */}
       <div className="mb-8 text-center sm:text-left">
-        <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', lineHeight: '1.2' }}>
-          ДОШКА ОГОЛОШЕНЬ
-        </h1>
-        <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
-          // ОФІЦІЙНІ ПОВІДОМЛЕННЯ ТА ПОДІЇ //
-        </p>
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-heading font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-primary)', lineHeight: '1.2' }}>
+              ДОШКА ОГОЛОШЕНЬ
+            </h1>
+            <p className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
+              // ОФІЦІЙНІ ПОВІДОМЛЕННЯ ТА ПОДІЇ //
+            </p>
+          </div>
+          {canManage && (
+            <button onClick={() => navigate('/notice-board-admin')} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>⚙️ Управління</button>
+          )}
+        </div>
       </div>
 
       {/* Controls: Search and Filters */}
@@ -57,15 +80,15 @@ export const NoticeBoardPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => setFilter('all')} className="btn" style={{ background: filter === 'all' ? 'var(--gradient-gold)' : 'transparent', color: filter === 'all' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${filter === 'all' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 16px', fontSize: '13px' }}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 w-full lg:w-auto flex-1">
+            <button onClick={() => setFilter('all')} className="btn w-full flex items-center justify-center text-center" style={{ background: filter === 'all' ? 'var(--gradient-gold)' : 'transparent', color: filter === 'all' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${filter === 'all' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 16px', fontSize: '13px' }}>
               Всі
             </button>
             {Object.entries(typeConfig).map(([key, config]) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className="btn"
+                className="btn w-full flex items-center justify-center text-center"
                 style={{ background: filter === key ? `${config.color}20` : 'transparent', color: filter === key ? config.color : 'var(--text-muted)', border: `1px solid ${filter === key ? config.color : '#333'}`, padding: '10px 16px', fontSize: '13px' }}
               >
                 {config.icon} {config.label}
@@ -77,7 +100,13 @@ export const NoticeBoardPage: React.FC = () => {
 
       {/* Announcements List */}
       <div className="space-y-4">
-        {filteredAnnouncements.length === 0 ? (
+        {loading ? (
+          <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
+            <svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg>
+            <p style={{ color: 'var(--text-muted)' }}>Завантаження оголошень...</p>
+          </div>
+        ) :
+        filteredAnnouncements.length === 0 ? (
           <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]">
             <div className="text-6xl mb-4">📭</div>
             <h3 className="text-xl font-heading font-bold mb-3" style={{ color: 'var(--text-primary)' }}>Оголошень не знайдено</h3>
@@ -96,7 +125,7 @@ export const NoticeBoardPage: React.FC = () => {
                     </span>
                     <h3 className="text-xl font-heading font-bold text-white">{a.title}</h3>
                   </div>
-                  <span className="text-xs text-gray-400 font-mono flex-shrink-0 bg-[#111] px-3 py-1 border border-[#333]">{a.date}</span>
+                  <span className="text-xs text-gray-400 font-mono flex-shrink-0 bg-[#111] px-3 py-1 border border-[#333]">{new Date(a.createdAt).toLocaleString('uk-UA')}</span>
                 </div>
                 
                 <p className="text-gray-300 mb-5 text-sm leading-relaxed">{a.text}</p>

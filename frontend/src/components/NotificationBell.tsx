@@ -1,24 +1,52 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { api } from '@services/api';
 import { useNavigate } from 'react-router-dom';
-import { useNotificationStore } from '../stores/notificationStore';
+
+interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export const NotificationBell: React.FC = () => {
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotificationStore();
+  const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.get('/notifications');
+      const notificationsList = res.data.data || res.data || [];
+      
+      // Дедублікування - залишаємо тільки унікальні запити за ID
+      const uniqueNotifications = Array.from(
+        new Map(notificationsList.map((n: any) => [n.id, n])).values()
+      );
+      
+      // Сортуємо за часом (новіші першими)
+      uniqueNotifications.sort((a: any, b: any) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      setNotifications(uniqueNotifications);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     fetchNotifications();
-    // Періодичне оновлення сповіщень кожні 3 хвилини
-    const interval = setInterval(fetchNotifications, 180000);
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, []);
 
-  // Закриття дропдауну при кліку поза ним
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -26,78 +54,98 @@ export const NotificationBell: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleNotificationClick = (id: string, link?: string) => {
-    markAsRead(id);
-    setIsOpen(false);
-    if (link) {
-      navigate(link);
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  const markAsRead = async (id: string) => {
+    try {
+      await api.put(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (e) {}
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.put('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (e) {}
+  };
+
+  const clearAll = async () => {
+    try {
+      await api.delete('/notifications');
+      // Миттєво очищуємо список на фронтенді
+      setNotifications([]);
+      // Перевіримо, що на бекенді також очищено
+      setTimeout(() => fetchNotifications(), 500);
+    } catch (e) {
+      console.error('Error clearing notifications:', e);
+      // Все одно спробуємо освіжити список
+      fetchNotifications();
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'mentorship': return '🤝';
-      case 'schedule': return '📅';
-      case 'psychology': return '🧠';
-      case 'report': return '📄';
-      default: return '🔔';
-    }
+  const handleNotificationClick = (n: AppNotification) => {
+    markAsRead(n.id);
+    setIsOpen(false);
+    if (n.type === 'announcement') navigate('/notice-board');
+    else if (n.type === 'faq') navigate('/faq');
+    else if (n.type === 'schedule') navigate('/schedule');
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-3 rounded-none border transition-all duration-300 hover:bg-[#111] bg-[#0a0a0a] border-[#333]"
+        className="relative flex items-center justify-center w-10 h-10 rounded-none border transition-all duration-300 hover:-translate-y-0.5"
+        style={{
+          background: '#0a0a0a',
+          border: unreadCount > 0 ? '1px solid var(--ab3-gold)' : '1px solid #333',
+          color: unreadCount > 0 ? 'var(--ab3-gold)' : 'var(--text-muted)',
+        }}
       >
-        <span className="text-xl">🔔</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center bg-red-600 text-white text-[10px] font-bold rounded-full animate-pulse border border-black">
+          <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-[#0a0a0a] animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#0a0a0a] border border-[#333] shadow-2xl z-50 animate-fade-in-up flex flex-col max-h-[80vh]">
-          <div className="p-4 border-b border-[#333] flex justify-between items-center bg-[#111]">
-            <h3 className="font-heading font-black uppercase tracking-widest text-white text-sm">Сигнали</h3>
-            {unreadCount > 0 && (
-              <button onClick={markAllAsRead} className="text-[10px] font-mono text-[var(--ab3-gold)] hover:underline uppercase tracking-widest">
-                Прочитано все
-              </button>
-            )}
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-[#0a0a0a] border border-[#333] shadow-2xl z-50 animate-fade-in-up origin-top-right">
+          <div className="flex items-center justify-between p-3 border-b border-[#333] bg-[#111]">
+            <h3 className="font-heading font-black uppercase tracking-widest text-sm text-white">Сповіщення</h3>
+            <div className="flex gap-3">
+              {unreadCount > 0 && (
+                <button onClick={markAllAsRead} className="text-xs font-mono text-[var(--ab3-gold)] hover:underline">Прочитати</button>
+              )}
+              {notifications.length > 0 && (
+                <button onClick={clearAll} className="text-xs font-mono text-red-500 hover:underline">Очистити</button>
+              )}
+            </div>
           </div>
-
-          <div className="overflow-y-auto flex-1">
+          <div className="max-h-[60vh] overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center">
-                <span className="text-4xl block mb-2 opacity-50">📭</span>
-                <p className="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest">Немає нових сповіщень</p>
-              </div>
+              <div className="p-8 text-center text-gray-500 text-sm">📭 Немає нових сповіщень</div>
             ) : (
               <div className="divide-y divide-[#222]">
-                {notifications.map((n) => (
+                {notifications.map(n => (
                   <div
                     key={n.id}
-                    onClick={() => handleNotificationClick(n.id, n.link)}
-                    className={`p-4 cursor-pointer transition-colors hover:bg-[#151515] ${!n.isRead ? 'bg-[#0f0f0f]' : ''}`}
-                    style={{ borderLeft: !n.isRead ? '3px solid var(--ab3-gold)' : '3px solid transparent' }}
+                    onClick={() => handleNotificationClick(n)}
+                    className={`p-3 cursor-pointer transition-colors hover:bg-[#111] ${!n.isRead ? 'border-l-2 border-[var(--ab3-gold)] bg-[#1a1814]' : ''}`}
                   >
-                    <div className="flex gap-3 items-start">
-                      <span className="text-2xl flex-shrink-0 mt-1">{getTypeIcon(n.type)}</span>
-                      <div>
-                        <h4 className={`text-sm font-bold mb-1 ${!n.isRead ? 'text-white' : 'text-gray-400'}`}>
-                          {n.title}
-                        </h4>
-                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                          {n.message}
-                        </p>
-                        <p className="text-[10px] font-mono text-[var(--text-faint)] mt-2 uppercase">
-                          {new Date(n.createdAt).toLocaleString('uk-UA')}
-                        </p>
-                      </div>
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-bold text-sm text-white">{n.title}</span>
+                      <span className="text-[10px] text-gray-500 font-mono whitespace-nowrap ml-2">
+                        {new Date(n.createdAt).toLocaleString('uk-UA', { 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          hour12: false
+                        })}
+                      </span>
                     </div>
+                    <p className="text-xs text-gray-400 line-clamp-2">{n.message}</p>
                   </div>
                 ))}
               </div>

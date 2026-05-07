@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@stores/index';
 import { NotificationBell } from './NotificationBell';
@@ -41,6 +41,11 @@ const MODULE_MENU: MenuItem[] = [
         icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
         label: 'FAQ',
       },
+      {
+        path: '/slang',
+        icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" strokeWidth="2"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" strokeWidth="2"/></svg>,
+        label: 'Словник Сленгу',
+      },
     ]
   },
   {
@@ -82,6 +87,23 @@ const MODULE_MENU: MenuItem[] = [
   },
   {
     path: '',
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/><path d="M23 21v-2a4 4 0 00-3-3.87" stroke="currentColor" strokeWidth="2"/><path d="M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2"/></svg>,
+    label: 'Мій Підрозділ',
+    subItems: [
+      {
+        path: '/unit-dashboard',
+        icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/><path d="M9 21V9" stroke="currentColor" strokeWidth="2"/></svg>,
+        label: 'Склад та Запити',
+      },
+      {
+        path: '/chat',
+        icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" stroke="currentColor" strokeWidth="2"/><path d="M12 12v.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><path d="M16 12v.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/><path d="M8 12v.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>,
+        label: 'Захищений Чат',
+      },
+    ]
+  },
+  {
+    path: '',
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/></svg>,
     label: 'Служба',
     subItems: [
@@ -94,6 +116,11 @@ const MODULE_MENU: MenuItem[] = [
         path: '/equipment',
         icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 20h16" stroke="currentColor" strokeWidth="2"/><path d="M6 20V8a2 2 0 012-2h8a2 2 0 012 2v12" stroke="currentColor" strokeWidth="2"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2"/></svg>,
         label: 'Екіпірування',
+      },
+      {
+        path: '/visual-gear',
+        icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="currentColor" strokeWidth="2"/></svg>,
+        label: 'Тактичний Конструктор',
       },
       {
         path: '/reports',
@@ -153,6 +180,84 @@ const MODULE_MENU: MenuItem[] = [
   },
 ];
 
+// === ТАКТИЧНІ ГЛОБАЛЬНІ ФІЛЬТРИ ===
+const toggleRedLightMode = (enable: boolean) => {
+  if (enable) {
+    document.documentElement.style.filter = 'grayscale(1) sepia(1) hue-rotate(-50deg) saturate(5) brightness(0.7) contrast(1.2)';
+    document.documentElement.style.backgroundColor = '#000';
+  } else {
+    document.documentElement.style.filter = '';
+    document.documentElement.style.backgroundColor = '';
+  }
+};
+
+// --- СЕКРЕТНИЙ КОМПОНЕНТ "МАТРИЦІ" (GOD MODE) ---
+const MatrixRain = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Українська абетка + цифри + спецсимволи для брутального вигляду
+    const chars = 'АБВГДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ0123456789$+-*/=%""\'#&_(),.;:?!\\|{}<>[]^~';
+    const letters = chars.split('');
+    const fontSize = 16;
+    let columns = Math.floor(width / fontSize);
+    let drops: number[] = [];
+
+    for (let i = 0; i < columns; i++) drops[i] = Math.random() * -100;
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'; // Слід від падаючої літери
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = '#0f0'; // Хакерський зелений
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    };
+
+    const intervalId = setInterval(draw, 33);
+
+    const handleResize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      columns = Math.floor(width / fontSize);
+      drops = [];
+      for (let i = 0; i < columns; i++) drops[i] = Math.random() * -100;
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => { clearInterval(intervalId); window.removeEventListener('resize', handleResize); };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden cursor-crosshair">
+      <canvas ref={canvasRef} className="absolute inset-0 block w-full h-full opacity-80" />
+      <div className="relative z-10 flex flex-col items-center p-8 sm:p-12 border-2 border-green-500/40 bg-black/70 backdrop-blur-sm shadow-[0_0_50px_rgba(0,255,0,0.15)] animate-fade-in-up text-center">
+        <h1 className="text-5xl md:text-8xl font-black text-green-500 uppercase tracking-widest animate-pulse drop-shadow-[0_0_15px_rgba(0,255,0,0.8)] font-mono mb-2">GOD MODE</h1>
+        <p className="text-green-400 font-mono mt-6 text-xs md:text-sm uppercase tracking-widest border border-green-500/50 px-6 py-3 bg-green-950/30">СИСТЕМА ПІД ПОВНИМ КОНТРОЛЕМ</p>
+        <p className="text-green-600 font-mono mt-6 text-[10px] uppercase tracking-widest animate-bounce">[ ПЕРЕЗАВАНТАЖТЕ СТОРІНКУ (F5) ДЛЯ ВИХОДУ З МАТРИЦІ ]</p>
+      </div>
+    </div>
+  );
+};
+
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -163,12 +268,93 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [hoverTimeout, setHoverTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoClicks, setLogoClicks] = useState(0);
+  const [isRedLight, setIsRedLight] = useState(false);
+  
+  // --- Tactical Calculator State ---
+  const [showCalcModal, setShowCalcModal] = useState(false);
+  const [calcCoords, setCalcCoords] = useState({ x1: '', y1: '', x2: '', y2: '' });
+  const [calcResult, setCalcResult] = useState<{dist: number, az: number} | null>(null);
+
+  // --- Search State ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchRefDesktop = useRef<HTMLDivElement>(null);
+  const searchRefMobile = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        (!searchRefDesktop.current || !searchRefDesktop.current.contains(e.target as Node)) &&
+        (!searchRefMobile.current || !searchRefMobile.current.contains(e.target as Node))
+      ) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const canAccessMenuItem = (item: MenuItem): boolean => {
+    if (!item.roles || item.roles.length === 0) return true;
+    return user ? item.roles.includes(user.role) : false;
+  };
+
+  const searchableItems = useMemo(() => {
+    const items: { label: string; path: string; icon: React.ReactNode }[] = [];
+    MODULE_MENU.forEach(item => {
+      if (!canAccessMenuItem(item)) return;
+      if (item.path && item.path !== '') items.push({ label: item.label, path: item.path, icon: item.icon });
+      if (item.subItems) {
+        item.subItems.forEach(sub => {
+          if (canAccessMenuItem(sub) && sub.path && sub.path !== '') {
+            items.push({ label: `${item.label} > ${sub.label}`, path: sub.path, icon: sub.icon });
+          }
+        });
+      }
+    });
+    return items;
+  }, [user?.role]);
+
+  // --- Dead Man's Switch (Автовикид при неактивності) ---
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    const resetTimer = () => {
+      clearTimeout(timeout);
+      // 1 година без активності = авто-вихід (для безпеки пристрою на позиціях)
+      timeout = setTimeout(() => {
+        if (user) {
+          logout();
+          window.location.href = '/login';
+        }
+      }, 1000 * 60 * 60);
+    };
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('touchstart', resetTimer);
+    resetTimer();
+    return () => {
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+      clearTimeout(timeout);
+    };
+  }, [user, logout]);
+
+  const searchResults = searchableItems.filter(item => 
+    item.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    toggleRedLightMode(isRedLight);
+    return () => toggleRedLightMode(false);
+  }, [isRedLight]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -180,9 +366,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
-  const canAccessMenuItem = (item: MenuItem): boolean => {
-    if (!item.roles || item.roles.length === 0) return true;
-    return user ? item.roles.includes(user.role) : false;
+  const executePanicWipe = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    logout();
+    window.location.href = '/login';
+  };
+
+  const calculateAzimuth = () => {
+    const x1 = parseFloat(calcCoords.x1); const y1 = parseFloat(calcCoords.y1);
+    const x2 = parseFloat(calcCoords.x2); const y2 = parseFloat(calcCoords.y2);
+    if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
+    
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    let angle = Math.atan2(dx, dy) * (180 / Math.PI);
+    if (angle < 0) angle += 360;
+    setCalcResult({ dist: Math.round(dist), az: Math.round(angle * 100) / 100 });
   };
 
   const isActivePath = (path: string): boolean => {
@@ -240,8 +441,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
 
             <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-3 group"
+              onClick={() => {
+                setLogoClicks(prev => prev + 1);
+                navigate('/');
+              }}
+              className="flex items-center gap-3 group relative"
             >
               <div
                 className="w-11 h-11 rounded-none border border-[var(--ab3-gold)] bg-black flex items-center justify-center transition-all duration-300 group-hover:shadow-[0_0_15px_rgba(201,162,39,0.4)]"
@@ -258,11 +462,81 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   // ЗБРОЙНІ СИЛИ УКРАЇНИ //
                 </p>
               </div>
+              {logoClicks >= 7 && (
+                <span className="absolute -bottom-6 left-14 text-[8px] font-mono text-[var(--ab3-gold)] animate-pulse tracking-widest whitespace-nowrap">GOD_MODE_UNLOCKED</span>
+              )}
             </button>
           </div>
 
           {/* Right: User Info + Actions */}
           <div className="flex items-center gap-3">
+            
+            {/* Desktop Search */}
+            <div className="hidden md:block relative w-64 lg:w-80 mr-2" ref={searchRefDesktop}>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Швидкий пошук..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
+                  onFocus={() => setIsSearchOpen(true)}
+                  className="w-full pl-10 py-2 text-sm bg-[#111] border border-[#333] text-white focus:border-[var(--ab3-gold)] focus:outline-none transition-colors"
+                />
+              </div>
+              
+              {isSearchOpen && searchQuery && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-[#333] shadow-2xl z-50 max-h-96 overflow-y-auto animate-fade-in-up">
+                  {searchResults.length > 0 ? (
+                    <div className="p-2 space-y-1">
+                      {searchResults.map(result => (
+                        <button
+                          key={result.path}
+                          onClick={() => { handleNavigate(result.path); setIsSearchOpen(false); setSearchQuery(''); }}
+                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-[#111] border border-transparent hover:border-[#333] transition-colors group"
+                        >
+                          <span className="text-[var(--ab3-gold)] opacity-70 group-hover:opacity-100 transition-opacity">{result.icon}</span>
+                          <span className="text-sm font-bold text-gray-300 group-hover:text-white uppercase tracking-wider truncate">{result.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-sm text-gray-500 uppercase tracking-widest font-mono">
+                      Нічого не знайдено
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+        {/* Tactical Calculator Toggle */}
+        <button
+          onClick={() => setShowCalcModal(true)}
+          title="Топографічний / Балістичний обчислювач"
+          className="hidden sm:flex items-center justify-center w-10 h-10 rounded-none border border-[#333] bg-[#111] text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-all mr-2"
+        >
+          🧭
+        </button>
+
+        {/* Tactical Theme Toggle */}
+        <button
+          onClick={() => setIsRedLight(!isRedLight)}
+          title="Режим Нічного Бачення (Red Light)"
+          className={`hidden sm:flex items-center justify-center w-10 h-10 rounded-none border transition-all ${isRedLight ? 'bg-red-900 border-red-500 text-red-500 shadow-[0_0_15px_red]' : 'bg-[#111] border-[#333] text-gray-500 hover:border-red-500 hover:text-red-500'}`}
+        >
+          👁️
+        </button>
+
+        {/* Panic Button */}
+        <button
+          onDoubleClick={executePanicWipe}
+          title="СТЕРТИ ДАНІ ТА ВИЙТИ (Подвійний клік)"
+          className="hidden md:flex items-center justify-center w-10 h-10 rounded-none border border-[#333] bg-[#111] text-gray-500 hover:bg-red-900 hover:border-red-500 hover:text-red-500 transition-all"
+        >
+          ☠️
+        </button>
 
             <NotificationBell />
 
@@ -321,6 +595,46 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Navigation Items */}
           <nav className="flex-1 overflow-y-auto p-3 space-y-1 min-h-0">
+            {/* Mobile Search */}
+            <div className={`md:hidden mb-4 relative transition-all duration-300 ${sidebarCollapsed ? 'hidden' : 'block'}`} ref={searchRefMobile}>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Пошук по системі..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setIsSearchOpen(true); }}
+                  onFocus={() => setIsSearchOpen(true)}
+                  className="w-full pl-9 py-2 text-xs bg-[#0a0a0a] border border-[#333] text-white focus:border-[var(--ab3-gold)] focus:outline-none transition-colors"
+                />
+              </div>
+              
+              {isSearchOpen && searchQuery && (
+                <div className="mt-1 bg-[#0a0a0a] border border-[#333] z-50 max-h-60 overflow-y-auto">
+                  {searchResults.length > 0 ? (
+                    <div className="p-1 space-y-1">
+                      {searchResults.map(result => (
+                        <button
+                          key={result.path}
+                          onClick={() => { handleNavigate(result.path); setIsSearchOpen(false); setSearchQuery(''); }}
+                          className="w-full flex items-center gap-2 p-2 text-left hover:bg-[#111] transition-colors"
+                        >
+                          <span className="text-[var(--ab3-gold)] scale-75 opacity-70">{result.icon}</span>
+                          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider truncate">{result.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center text-[10px] text-gray-500 uppercase tracking-widest font-mono">
+                      Нічого не знайдено
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {MODULE_MENU.map((item, index) => {
               if (!canAccessMenuItem(item)) return null;
               
@@ -477,17 +791,77 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Logout Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] p-6 max-w-sm w-full shadow-2xl animate-scale-in">
-            <h3 className="text-xl font-heading font-black text-white uppercase tracking-widest mb-3">Вихід із системи</h3>
-            <p className="text-sm text-gray-400 mb-6 leading-relaxed">Чи точно ви бажаєте завершити поточний сеанс та вийти з акаунту?</p>
-            <div className="flex gap-3">
-              <button onClick={executeLogout} className="btn btn-primary flex-1 py-3 text-sm">🚪 Вийти</button>
-              <button onClick={() => setShowLogoutModal(false)} className="btn flex-1 py-3 text-sm" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)' }}>Скасувати</button>
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] p-8 max-w-md w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--ab3-gold)] opacity-10 blur-2xl pointer-events-none"></div>
+            <h3 className="text-xl font-heading font-black text-white uppercase tracking-widest mb-3 flex items-center gap-3">
+              <span className="text-[var(--ab3-gold)]">!</span> ВИХІД ІЗ СИСТЕМИ
+            </h3>
+            <p className="text-xs font-mono text-gray-400 mb-8 leading-relaxed uppercase tracking-widest">Чи точно ви бажаєте завершити поточний сеанс та вийти з акаунту?</p>
+            <div className="flex gap-4">
+              <button onClick={executeLogout} className="flex-1 bg-[var(--ab3-gold)] text-black font-mono font-bold uppercase tracking-widest px-4 py-3 hover:bg-yellow-400 transition-colors shadow-[4px_4px_0_0_rgba(201,162,39,0.2)]">ПІДТВЕРДИТИ</button>
+              <button onClick={() => setShowLogoutModal(false)} className="flex-1 bg-[#111] border border-[#333] text-white font-mono font-bold uppercase tracking-widest px-4 py-3 hover:bg-[#222] transition-colors">СКАСУВАТИ</button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Tactical Calculator Modal */}
+      {showCalcModal && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-[#333] border-t-4 border-t-blue-500 p-8 max-w-sm w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden font-mono">
+            <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500 opacity-10 blur-2xl pointer-events-none"></div>
+            
+            <div className="flex justify-between items-center mb-6 border-b border-[#222] pb-4">
+              <h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <span className="text-blue-500">🧭</span> ОБЧИСЛЮВАЧ
+              </h3>
+              <button onClick={() => { setShowCalcModal(false); setCalcResult(null); }} className="text-gray-500 hover:text-red-500 text-xl font-sans">×</button>
+            </div>
+            
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Введіть координати для обчислення дистанції та азимуту:</p>
+            
+            <div className="space-y-4 mb-6">
+              <div className="p-3 border border-[#333] bg-[#111]">
+                <p className="text-[10px] text-[var(--ab3-gold)] mb-2 uppercase font-bold tracking-widest">Точка 1 (Ваша позиція)</p>
+                <div className="flex gap-2">
+                  <input type="number" placeholder="X (Схід)" value={calcCoords.x1} onChange={e=>setCalcCoords({...calcCoords, x1: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
+                  <input type="number" placeholder="Y (Північ)" value={calcCoords.y1} onChange={e=>setCalcCoords({...calcCoords, y1: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
+                </div>
+              </div>
+              
+              <div className="p-3 border border-[#333] bg-[#111]">
+                <p className="text-[10px] text-red-500 mb-2 uppercase font-bold tracking-widest">Точка 2 (Ціль)</p>
+                <div className="flex gap-2">
+                  <input type="number" placeholder="X (Схід)" value={calcCoords.x2} onChange={e=>setCalcCoords({...calcCoords, x2: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
+                  <input type="number" placeholder="Y (Північ)" value={calcCoords.y2} onChange={e=>setCalcCoords({...calcCoords, y2: e.target.value})} className="w-full bg-black border border-[#222] text-white px-2 py-2 text-xs focus:border-blue-500 outline-none" />
+                </div>
+              </div>
+            </div>
+            
+            <button onClick={calculateAzimuth} className="w-full bg-blue-900/30 border border-blue-900 text-blue-400 font-bold uppercase tracking-widest px-4 py-3 hover:bg-blue-600 hover:text-white transition-colors mb-6 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+              В ОБЧИСЛЮВАЧ
+            </button>
+
+            {calcResult && (
+              <div className="p-4 bg-green-950/20 border border-green-900 animate-fade-in-up">
+                <p className="text-[10px] text-green-500 uppercase tracking-widest mb-2 border-b border-green-900/50 pb-1">РЕЗУЛЬТАТИ РОЗРАХУНКУ:</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-400">ДИСТАНЦІЯ:</span>
+                  <span className="text-lg font-black text-white">{calcResult.dist} <span className="text-xs font-normal">м</span></span>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-gray-400">АЗИМУТ (Прямий):</span>
+                  <span className="text-lg font-black text-[var(--ab3-gold)]">{calcResult.az}°</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* God Mode Easter Egg */}
+      {logoClicks >= 7 && <MatrixRain />}
     </div>
   );
 };

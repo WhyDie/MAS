@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from '@components/Layout';
 import { LoginForm } from '@components/LoginForm';
@@ -21,15 +21,22 @@ import { UnitGuidePage } from '@pages/UnitGuidePage';
 import { UnitGuideAdminPage } from '@pages/UnitGuideAdminPage';
 import { MentorDashboardPage } from '@pages/MentorDashboardPage';
 import { PsychologistDashboardPage } from '@pages/PsychologistDashboardPage';
+import { UnitDashboardPage } from '@pages/UnitDashboardPage';
+import { ChatPage } from '@pages/ChatPage';
 import { GuidePage } from '@pages/GuidePage';
 import { NoticeBoardPage } from '@pages/NoticeBoardPage';
 import { FAQPage } from '@pages/FAQPage';
+import { NoticeBoardAdminPage } from '@pages/NoticeBoardAdminPage';
+import { FAQAdminPage } from '@pages/FAQAdminPage';
 import { ResourceAdminPage } from '@pages/ResourceAdminPage';
 import { ReportsPage } from '@pages/ReportsPage';
 import { AchievementsPage } from '@pages/AchievementsPage';
 import { TrainingAdminPage } from '@pages/TrainingAdminPage';
 import { SimulatorAdminPage } from '@pages/SimulatorAdminPage';
 import { AIChatPage } from '@pages/AIChatPage';
+import { SlangDictionaryPage } from '@pages/SlangDictionaryPage';
+import { SlangAdminPage } from '@pages/SlangAdminPage';
+import { VisualGearPage } from '@pages/VisualGearPage';
 import { Navigate } from 'react-router-dom';
 import { authService } from '@services/api';
 import { useAuthStore } from '@stores/index';
@@ -37,20 +44,78 @@ import '@styles/index.css';
 
 // Simple 404 component
 const NotFoundPage = () => (
-  <div className="flex items-center justify-center h-full min-h-[400px]">
-    <div className="text-center">
-      <div className="text-8xl mb-4">🛡</div>
-      <h1 className="text-4xl font-black mb-2" style={{ color: 'var(--ab3-gold)' }}>404</h1>
-      <p className="text-lg mb-6" style={{ color: 'var(--text-muted)' }}>Сторінку не знайдено</p>
+  <div className="flex items-center justify-center min-h-[calc(100vh-80px)] bg-[#050505] relative overflow-hidden font-mono">
+    <style>{`
+      @keyframes roam {
+        0% { transform: translate(0, 0); }
+        20% { transform: translate(30vw, -15vh); }
+        40% { transform: translate(-25vw, 25vh); }
+        60% { transform: translate(15vw, 35vh); }
+        80% { transform: translate(-30vw, -10vh); }
+        100% { transform: translate(0, 0); }
+      }
+      .animate-roam { animation: roam 12s ease-in-out infinite; }
+      .radar-sweep { background: conic-gradient(from 0deg, transparent 70%, rgba(220, 38, 38, 0.3) 100%); }
+    `}</style>
+    
+    {/* Tactical Grid Overlay */}
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+    
+    {/* Radar Background */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] border border-[#222] rounded-full opacity-30 pointer-events-none">
+      <div className="absolute inset-0 radar-sweep rounded-full animate-spin" style={{ animationDuration: '4s' }}></div>
+      <div className="absolute top-1/2 left-0 w-full h-[1px] bg-[#333]"></div>
+      <div className="absolute top-0 left-1/2 w-[1px] h-full bg-[#333]"></div>
+      <div className="absolute inset-1/4 border border-[#333] rounded-full"></div>
+      <div className="absolute inset-[37.5%] border border-[#222] rounded-full border-dashed"></div>
+    </div>
+
+    {/* Searching Crosshair (Sniper scope looking for target) */}
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0 animate-roam">
+      <div className="w-32 h-32 md:w-40 md:h-40 border-2 border-red-500/50 rounded-full relative flex items-center justify-center">
+        <div className="absolute top-1/2 -left-4 w-8 h-[2px] bg-red-500/80 -translate-y-1/2"></div>
+        <div className="absolute top-1/2 -right-4 w-8 h-[2px] bg-red-500/80 -translate-y-1/2"></div>
+        <div className="absolute -top-4 left-1/2 w-[2px] h-8 bg-red-500/80 -translate-x-1/2"></div>
+        <div className="absolute -bottom-4 left-1/2 w-[2px] h-8 bg-red-500/80 -translate-x-1/2"></div>
+        <div className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_red] animate-ping"></div>
+      </div>
+    </div>
+
+    {/* 404 Content */}
+    <div className="relative z-10 p-8 sm:p-12 bg-[#0a0a0a]/90 border border-[#333] shadow-[8px_8px_0_0_#111] max-w-md w-full mx-4 backdrop-blur-md animate-fade-in-up">
+      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[var(--ab3-gold)]"></div>
+      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[var(--ab3-gold)]"></div>
+
+      <div className="text-center mb-6">
+        <h1 className="text-7xl sm:text-8xl font-heading font-black text-white tracking-widest drop-shadow-lg mb-2">
+          4<span className="text-[var(--ab3-gold)] animate-pulse">0</span>4
+        </h1>
+        <div className="inline-block px-3 py-1 bg-red-900/30 border border-red-900 text-red-500 text-[10px] font-bold uppercase tracking-widest">
+          [ ТАРГЕТ ВТРАЧЕНО ]
+        </div>
+      </div>
+
+      <p className="text-sm text-gray-400 mb-8 leading-relaxed border-l-2 border-[#333] pl-4 text-justify">
+        Сектор чистий. Запитувану координату (як і ворога) не виявлено. Можливо, сторінка змінила дислокацію або була знищена ворожим РЕБ.
+      </p>
+
       <button
         onClick={() => window.location.href = '/'}
-        className="btn btn-primary"
+        className="w-full bg-[#111] border border-[#333] text-white hover:text-black hover:bg-[var(--ab3-gold)] hover:border-[var(--ab3-gold)] font-bold uppercase tracking-widest px-6 py-4 transition-all shadow-[4px_4px_0_0_#050505] hover:shadow-[4px_4px_0_0_var(--ab3-gold)] flex items-center justify-center gap-3"
       >
-        🏠 На головну
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        ПОВЕРНУТИСЯ НА БАЗУ
       </button>
     </div>
   </div>
 );
+
+// Компонент-обгортка для захисту адмінських маршрутів за ролями
+const RequireRole = ({ children, roles }: { children: React.ReactNode, roles: string[] }) => {
+  const { user } = useAuthStore();
+  if (!user || !roles.includes(user.role)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
 
 function App() {
   const { user, token, setUser } = useAuthStore();
@@ -62,7 +127,12 @@ function App() {
         .then((response) => {
           const data = response.data?.data || response.data;
           if (data?.user) {
-            setUser(data.user);
+            // Одразу підтягуємо розширений профіль (з підписом), щоб він не зникав після F5
+            api.get('/users/profile-extended').then(extRes => {
+              setUser({ ...data.user, ...extRes.data?.data });
+            }).catch(() => {
+              setUser(data.user);
+            });
           }
         })
         .catch(() => {
@@ -124,10 +194,10 @@ function App() {
         }
         
         aside nav button:hover span.font-heading {
-          /* Статичний хроматичний зсув замість епілептичного глітчу */
-          text-shadow: 1px 0px 0px rgba(255, 0, 0, 0.8), -1px 0px 0px rgba(0, 255, 255, 0.8) !important;
+          /* Тактичне світіння та розширення тексту меню */
+          text-shadow: 0 0 12px rgba(201, 162, 39, 0.6), 0 0 24px rgba(201, 162, 39, 0.2) !important;
           color: #fff !important;
-          letter-spacing: 0.15em !important;
+          letter-spacing: 0.2em !important;
         }
 
         /* 4. Ефект військового терміналу (Сканлайни - пом'якшено) */
@@ -151,6 +221,16 @@ function App() {
         .animate-pulse-glow {
           animation: brutalBlink 0.6s step-end infinite !important;
         }
+        
+        /* 6. Глітч ефект для заголовків (Brutal Glitch) */
+        .glitch-hover:hover {
+          animation: brutalGlitch 0.3s infinite;
+        }
+        @keyframes brutalGlitch {
+          0% { text-shadow: 3px 0 red, -3px 0 cyan; transform: translate(-1px, 1px); }
+          50% { text-shadow: -3px 0 red, 3px 0 cyan; transform: translate(1px, -1px); }
+          100% { text-shadow: none; transform: translate(0); }
+        }
       `}</style>
       <Routes>
         {/* Публічні сторінки */}
@@ -166,31 +246,38 @@ function App() {
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/unit-guide" element={<UnitGuidePage />} />
-                  <Route path="/unit-guide-admin" element={<UnitGuideAdminPage />} />
+                  <Route path="/unit-guide-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><UnitGuideAdminPage /></RequireRole>} />
                   <Route path="/notice-board" element={<NoticeBoardPage />} />
                   <Route path="/faq" element={<FAQPage />} />
+                  <Route path="/notice-board-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><NoticeBoardAdminPage /></RequireRole>} />
+                  <Route path="/faq-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><FAQAdminPage /></RequireRole>} />
                   <Route path="/ai-chat" element={<AIChatPage />} />
                   <Route path="/guide" element={<GuidePage />} />
-                  <Route path="/guide-admin" element={<ResourceAdminPage />} />
+                  <Route path="/guide-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><ResourceAdminPage /></RequireRole>} />
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/training" element={<TrainingPage />} />
                   <Route path="/training/:id" element={<TrainingModuleDetailPage />} />
-                  <Route path="/training-admin" element={<TrainingAdminPage />} />
+                  <Route path="/training-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><TrainingAdminPage /></RequireRole>} />
                   <Route path="/training-simulators" element={<TrainingSimulatorPage />} />
-                  <Route path="/simulator-admin" element={<SimulatorAdminPage />} />
+                  <Route path="/simulator-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><SimulatorAdminPage /></RequireRole>} />
                   <Route path="/schedule" element={<SchedulePage />} />
-                  <Route path="/schedule-admin" element={<ScheduleAdminPage />} />
+                  <Route path="/schedule-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><ScheduleAdminPage /></RequireRole>} />
                   <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+                  <Route path="/slang" element={<SlangDictionaryPage />} />
+                  <Route path="/slang-admin" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><SlangAdminPage /></RequireRole>} />
                   <Route path="/equipment" element={<EquipmentPage />} />
+                  <Route path="/visual-gear" element={<VisualGearPage />} />
                   <Route path="/psychological-support" element={<PsychologicalSupportPage />} />
                   <Route path="/mentorship" element={<MentorshipPage />} />
+                  <Route path="/unit-dashboard" element={<UnitDashboardPage />} />
+                  <Route path="/chat" element={<ChatPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/achievements" element={<AchievementsPage />} />
-                  <Route path="/commander-dashboard" element={<CommanderDashboardPage />} />
-                  <Route path="/mentor-dashboard" element={<MentorDashboardPage />} />
-                  <Route path="/psychologist-dashboard" element={<PsychologistDashboardPage />} />
-                  <Route path="/invite-codes" element={<InviteCodesPage />} />
+                  <Route path="/commander-dashboard" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><CommanderDashboardPage /></RequireRole>} />
+                  <Route path="/mentor-dashboard" element={<RequireRole roles={['mentor', 'commander', 'admin', 'superadmin']}><MentorDashboardPage /></RequireRole>} />
+                  <Route path="/psychologist-dashboard" element={<RequireRole roles={['psychologist', 'commander', 'admin', 'superadmin']}><PsychologistDashboardPage /></RequireRole>} />
+                  <Route path="/invite-codes" element={<RequireRole roles={['commander', 'admin', 'superadmin']}><InviteCodesPage /></RequireRole>} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Layout>
