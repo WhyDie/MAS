@@ -10,6 +10,28 @@ const router = Router();
 AppDataSource.query('ALTER TABLE "users" ADD COLUMN "middleName" varchar').catch(() => {
   // Ігноруємо помилку, якщо колонка вже існує
 });
+// Забезпечуємо наявність колонки channel у базі даних чатів
+AppDataSource.query('ALTER TABLE "unit_chat_messages" ADD COLUMN "channel" varchar DEFAULT \'general\'').catch(() => {
+});
+
+let unitSchemaChecked = false;
+const ensureUnitSchema = async () => {
+  if (unitSchemaChecked) return;
+  try {
+    await AppDataSource.query(`
+      CREATE TABLE IF NOT EXISTS "unit_duties" (
+        "id" varchar PRIMARY KEY, "unitId" varchar NOT NULL, "title" varchar NOT NULL,
+        "type" varchar DEFAULT 'duty', "status" varchar DEFAULT 'active',
+        "timeRange" varchar, "assignedUserIds" text, "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "currentStatus" varchar DEFAULT \'active\'').catch(() => {});
+    await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "dutyCount" integer DEFAULT 0').catch(() => {});
+    await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "lastDutyDate" datetime').catch(() => {});
+    await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "commanderNotes" text').catch(() => {});
+    unitSchemaChecked = true;
+  } catch (e) { console.error('Schema check error:', e); }
+};
 
 const getUserId = (req: any) => {
   const authHeader = req.headers.authorization;
@@ -78,8 +100,8 @@ router.delete('/:id', async (req, res) => {
     const userId = getUserId(req);
     const unit = await AppDataSource.query('SELECT "commanderId" FROM "military_units" WHERE id = ?', [req.params.id]);
     
-    // Перевірка чи це командир (в реальному проекті ще перевірка на адміна)
-    // if (unit[0]?.commanderId !== userId) return sendError(res, 'Немає прав', 403);
+    // Перевірка чи це командир
+    if (!unit[0] || unit[0].commanderId !== userId) return sendError(res, 'Немає прав для видалення підрозділу', 403);
 
     // Відв'язуємо всіх користувачів та чистимо сліди
     await AppDataSource.query('UPDATE "users" SET "unitId" = NULL WHERE "unitId" = ?', [req.params.id]);
@@ -170,7 +192,7 @@ router.get('/:id/members', async (req, res) => {
     // Збагачений запит для Панелі Командира: підтягуємо статистику та останній логін кожного бійця
     const members = await AppDataSource.query(`
       SELECT 
-        u.id, u."firstName", u."lastName", u."middleName", u."rank", u."role", u."position", u."lastLoginAt",
+        u.id, u."firstName", u."lastName", u."middleName", u."rank", u."role", u."position", u."lastLoginAt", u."birthDate", u."serviceStartDate", u."dutyCount", u."lastDutyDate", u."currentStatus", u."commanderNotes", u."callsign",
         (SELECT COUNT(*) FROM "xt_user_progress" p WHERE p."userId" = u.id AND p.status = 'completed') as "completedModules",
         (SELECT AVG(score) FROM "xt_simulator_attempts" s WHERE s."userId" = u.id) as "avgSimScore"
       FROM "users" u 
@@ -193,6 +215,82 @@ router.post('/:id/remove-user', async (req, res) => {
     await AppDataSource.query('UPDATE "users" SET "unitId" = NULL WHERE id = ? AND "unitId" = ?', [req.body.userId, req.params.id]);
     sendSuccess(res, null, 'Бійця відсторонено від підрозділу');
   } catch (e) { sendError(res, 'Помилка відсторонення', 500); }
+});
+
+// Зміна статусу бійця командиром
+router.put('/:id/members/:userId/status', async (req, res) => {
+  try {
+    await ensureUnitSchema();
+    await AppDataSource.query('UPDATE "users" SET "currentStatus" = ? WHERE id = ? AND "unitId" = ?', [req.body.status, req.params.userId, req.params.id]);
+    sendSuccess(res, null, 'Статус оновлено');
+  } catch (e) { sendError(res, 'Помилка', 500); }
+});
+
+// Збереження приміток командира
+router.put('/:id/members/:userId/notes', async (req, res) => {
+  try {
+    await AppDataSource.query('UPDATE "users" SET "commanderNotes" = ? WHERE id = ? AND "unitId" = ?', [req.body.notes, req.params.userId, req.params.id]);
+    sendSuccess(res, null, 'Нотатки збережено');
+  } catch (e) { sendError(res, 'Помилка', 500); }
+});
+
+// Отримати список нарядів
+router.get('/:id/duties', async (req, res) => {
+  try {
+    const duties = await AppDataSource.query('SELECT * FROM "unit_duties" WHERE "unitId" = ? ORDER BY "createdAt" DESC', [req.params.id]);
+    sendSuccess(res, duties);
+  } catch (e) { sendError(res, 'Помилка', 500); }
+});
+
+// Отримати активні наряди та роботи для конкретного бійця (для Головної сторінки)
+router.get('/my/active-duties', async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const duties = await AppDataSource.query(`
+      SELECT * FROM "unit_duties" 
+      WHERE "status" = 'active' AND "assignedUserIds" LIKE ?
+      ORDER BY "createdAt" DESC
+    `, [`%${userId}%`]);
+    sendSuccess(res, duties);
+  } catch (e) { sendError(res, 'Помилка', 500); }
+});
+
+// Створити наряд/роботу
+router.post('/:id/duties', async (req, res) => {
+  try {
+    await ensureUnitSchema();
+    const { title, type, timeRange, assignedUserIds } = req.body;
+    if (!title || !assignedUserIds || assignedUserIds.length === 0) {
+      return sendError(res, 'Неповні дані для наказу', 400);
+    }
+    const dutyId = crypto.randomUUID();
+    
+    await AppDataSource.query(
+      'INSERT INTO "unit_duties" ("id", "unitId", "title", "type", "timeRange", "assignedUserIds") VALUES (?, ?, ?, ?, ?, ?)',
+      [dutyId, req.params.id, title, type || 'duty', timeRange, JSON.stringify(assignedUserIds)]
+    );
+
+    // Сповіщення та оновлення статусу
+    const now = new Date().toISOString();
+    const statusToSet = type === 'work' ? 'working' : 'duty';
+    const notifPrefix = type === 'work' ? '🛠️ РОБОЧИЙ НАКАЗ' : '⚠️ БОЙОВИЙ НАКАЗ';
+
+    for (const userId of assignedUserIds) {
+      await AppDataSource.query('UPDATE "users" SET "dutyCount" = COALESCE("dutyCount", 0) + 1, "lastDutyDate" = ?, "currentStatus" = ? WHERE id = ?', [now, statusToSet, userId]);
+      await AppDataSource.query(
+        'INSERT INTO "notifications" ("id", "userId", "title", "message", "type", "createdAt") VALUES (?, ?, ?, ?, ?, ?)',
+        [crypto.randomUUID(), userId, notifPrefix, `Вас призначено: ${title} (${timeRange})`, 'schedule', now]
+      );
+    }
+    sendSuccess(res, null, 'Наказ створено');
+  } catch (e) { sendError(res, 'Помилка створення', 500); }
+});
+
+router.put('/:id/duties/:dutyId/complete', async (req, res) => {
+  try {
+    await AppDataSource.query('UPDATE "unit_duties" SET "status" = ? WHERE id = ? AND "unitId" = ?', ['completed', req.params.dutyId, req.params.id]);
+    sendSuccess(res, null, 'Наряд закрито');
+  } catch (e) { sendError(res, 'Помилка', 500); }
 });
 
 // Отримати зведену аналітику по підрозділу для Панелі Командира
@@ -295,15 +393,11 @@ router.post('/:id/chat/:channel', async (req, res) => {
 
     const { encryptedContent, iv } = req.body;
     
-    // Захист: якщо стовпчик channel ще не створився, ми його примусово додаємо
-    try {
-      await AppDataSource.query('INSERT INTO "unit_chat_messages" ("id", "unitId", "channel", "senderId", "encryptedContent", "iv", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?)', [crypto.randomUUID(), req.params.id, channel, userId, encryptedContent, iv, new Date().toISOString()]);
-    } catch (dbErr: any) {
-      if (dbErr.message && dbErr.message.includes('channel')) {
-        await AppDataSource.query(`ALTER TABLE "unit_chat_messages" ADD COLUMN "channel" varchar DEFAULT 'general'`);
-        await AppDataSource.query('INSERT INTO "unit_chat_messages" ("id", "unitId", "channel", "senderId", "encryptedContent", "iv", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?)', [crypto.randomUUID(), req.params.id, channel, userId, encryptedContent, iv, new Date().toISOString()]);
-      } else throw dbErr;
-    }
+    // Тепер колонка 'channel' гарантовано існує завдяки міграції на початку файлу
+    await AppDataSource.query(
+      'INSERT INTO "unit_chat_messages" ("id", "unitId", "channel", "senderId", "encryptedContent", "iv", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?)', 
+      [crypto.randomUUID(), req.params.id, channel, userId, encryptedContent, iv, new Date().toISOString()]
+    );
     sendSuccess(res, null);
   } catch (e: any) { sendError(res, e.message || 'Помилка відправки', 500); }
 });

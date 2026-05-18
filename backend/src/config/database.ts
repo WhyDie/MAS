@@ -25,7 +25,7 @@ export const AppDataSource = new DataSource({
   username: config.database.type === 'better-sqlite3' ? undefined : config.database.username,
   password: config.database.type === 'better-sqlite3' ? undefined : config.database.password,
   database: config.database.type === 'better-sqlite3' ? config.database.path : config.database.name,
-  synchronize: config.app.nodeEnv === 'development',
+  synchronize: false,
   logging: config.app.nodeEnv === 'development',
   entities: [
     User,

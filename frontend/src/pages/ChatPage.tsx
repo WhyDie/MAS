@@ -148,6 +148,7 @@ export const ChatPage: React.FC = () => {
   const boardRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState('#ef4444');
+  const [activeStamp, setActiveStamp] = useState<string | null>(null);
 
   // Voice (PTT) States
   const [isRecording, setIsRecording] = useState(false);
@@ -259,24 +260,113 @@ export const ChatPage: React.FC = () => {
   const isInfoReadOnly = activeChat === 'unit-info' && user?.id !== unit?.commanderId;
 
   // Tactical Board Handlers
+  const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = boardRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    
+    // Враховуємо реальний розмір canvas відносно того, як він відмальовується у CSS
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  };
+
+  const drawStamp = (x: number, y: number, type: string) => {
+    const ctx = boardRef.current?.getContext('2d');
+    if (!ctx) return;
+    
+    const size = 25; // Базовий розмір тактичного знаку
+    ctx.lineWidth = 3;
+    
+    if (type.startsWith('friendly')) {
+      ctx.strokeStyle = '#3b82f6'; // Синій НАТО
+      ctx.fillStyle = 'rgba(59,130,246,0.3)';
+      ctx.beginPath();
+      ctx.rect(x - size, y - size*0.7, size*2, size*1.4);
+      ctx.fill();
+      ctx.stroke();
+      
+      if (type === 'friendly_inf') {
+        ctx.beginPath();
+        ctx.moveTo(x - size, y - size*0.7);
+        ctx.lineTo(x + size, y + size*0.7);
+        ctx.moveTo(x - size, y + size*0.7);
+        ctx.lineTo(x + size, y - size*0.7);
+        ctx.stroke();
+      } else if (type === 'friendly_armor') {
+        ctx.beginPath();
+        ctx.ellipse(x, y, size*0.6, size*0.3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (type.startsWith('enemy')) {
+      ctx.strokeStyle = '#ef4444'; // Червоний
+      ctx.fillStyle = 'rgba(239,68,68,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(x, y - size);
+      ctx.lineTo(x + size, y);
+      ctx.lineTo(x, y + size);
+      ctx.lineTo(x - size, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      if (type === 'enemy_inf') {
+        ctx.beginPath();
+        ctx.moveTo(x - size*0.5, y - size*0.5);
+        ctx.lineTo(x + size*0.5, y + size*0.5);
+        ctx.moveTo(x - size*0.5, y + size*0.5);
+        ctx.lineTo(x + size*0.5, y - size*0.5);
+        ctx.stroke();
+      } else if (type === 'enemy_armor') {
+        ctx.beginPath();
+        ctx.ellipse(x, y, size*0.4, size*0.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (type === 'ksp') {
+       ctx.strokeStyle = '#f59e0b';
+       ctx.fillStyle = 'rgba(245,158,11,0.3)';
+       ctx.beginPath();
+       ctx.rect(x - size, y - size*0.5, size*2, size);
+       ctx.fill();
+       ctx.stroke();
+       ctx.beginPath();
+       ctx.moveTo(x, y - size*0.5);
+       ctx.lineTo(x, y - size*1.5);
+       ctx.stroke();
+       ctx.font = 'bold 16px monospace';
+       ctx.fillStyle = '#f59e0b';
+       ctx.textAlign = 'center';
+       ctx.fillText('КСП', x, y + size*1.2);
+    }
+  };
+
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    const coords = getCanvasCoords(e);
+    
+    if (activeStamp) {
+      drawStamp(coords.x, coords.y, activeStamp);
+      return;
+    }
+
     setIsDrawing(true);
     const ctx = boardRef.current?.getContext('2d');
-    if (!ctx || !boardRef.current) return;
-    const rect = boardRef.current.getBoundingClientRect();
-    const x = ('touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX) - rect.left;
-    const y = ('touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY) - rect.top;
+    if (!ctx) return;
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(coords.x, coords.y);
   };
+
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing) return;
+    if (!isDrawing || activeStamp) return;
     const ctx = boardRef.current?.getContext('2d');
-    if (!ctx || !boardRef.current) return;
-    const rect = boardRef.current.getBoundingClientRect();
-    const x = ('touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX) - rect.left;
-    const y = ('touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY) - rect.top;
-    ctx.lineTo(x, y);
+    if (!ctx) return;
+    const coords = getCanvasCoords(e);
+    ctx.lineTo(coords.x, coords.y);
     ctx.strokeStyle = brushColor;
     ctx.lineWidth = 3;
     ctx.stroke();
@@ -291,7 +381,7 @@ export const ChatPage: React.FC = () => {
       if (activeChat.startsWith('unit-')) await api.post(`/units/${unit.id}/chat/${activeChat.replace('unit-', '')}`, enc);
       else await api.post(`/units/dm/${activeChat.replace('dm-', '')}`, enc);
       loadMessages();
-    } catch (e) { alert('Помилка відправки дошки'); }
+    } catch (e) { setModal({ isOpen: true, title: 'ПОМИЛКА', message: 'Помилка відправки тактичної дошки. Перевірте з\'єднання.' }); }
   };
 
   // Voice (PTT) Handlers
@@ -495,19 +585,30 @@ export const ChatPage: React.FC = () => {
       {/* TACTICAL BOARD OVERLAY */}
       {showBoard && (
         <div className="absolute inset-0 z-[100] bg-[#0a0a0a] flex flex-col">
-          <div className="h-16 border-b border-[#333] bg-[#111] flex justify-between items-center px-6">
-            <div className="flex gap-4 items-center">
-              <span className="text-xs font-mono uppercase tracking-widest text-gray-500 mr-2">Колір:</span>
-              <button onClick={() => setBrushColor('#ef4444')} className={`w-8 h-8 rounded-full bg-red-500 ${brushColor === '#ef4444' ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
-              <button onClick={() => setBrushColor('#3b82f6')} className={`w-8 h-8 rounded-full bg-blue-500 ${brushColor === '#3b82f6' ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
-              <button onClick={() => setBrushColor('#f59e0b')} className={`w-8 h-8 rounded-full bg-yellow-500 ${brushColor === '#f59e0b' ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
-              <button onClick={() => setBrushColor('#22c55e')} className={`w-8 h-8 rounded-full bg-green-500 ${brushColor === '#22c55e' ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
-              <button onClick={() => setBrushColor('#ffffff')} className={`w-8 h-8 rounded-full bg-white ${brushColor === '#ffffff' ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-gray-400' : ''}`}></button>
-              <button onClick={() => { const ctx = boardRef.current?.getContext('2d'); ctx?.clearRect(0,0,boardRef.current!.width, boardRef.current!.height); }} className="text-xs font-mono ml-4 text-red-500 hover:text-red-400 border border-red-900/50 px-3 py-1 bg-red-900/20">ОЧИСТИТИ</button>
+          <div className="border-b border-[#333] bg-[#111] flex flex-col px-4 py-3 gap-3">
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <div className="flex gap-2 items-center flex-wrap">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 mr-1">Маркер:</span>
+                <button onClick={() => { setActiveStamp(null); setBrushColor('#ef4444'); }} className={`w-8 h-8 rounded-full bg-red-500 ${brushColor === '#ef4444' && !activeStamp ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
+                <button onClick={() => { setActiveStamp(null); setBrushColor('#3b82f6'); }} className={`w-8 h-8 rounded-full bg-blue-500 ${brushColor === '#3b82f6' && !activeStamp ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
+                <button onClick={() => { setActiveStamp(null); setBrushColor('#f59e0b'); }} className={`w-8 h-8 rounded-full bg-yellow-500 ${brushColor === '#f59e0b' && !activeStamp ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
+                <button onClick={() => { setActiveStamp(null); setBrushColor('#22c55e'); }} className={`w-8 h-8 rounded-full bg-green-500 ${brushColor === '#22c55e' && !activeStamp ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-white' : ''}`}></button>
+                <button onClick={() => { setActiveStamp(null); setBrushColor('#ffffff'); }} className={`w-8 h-8 rounded-full bg-white ${brushColor === '#ffffff' && !activeStamp ? 'ring-2 ring-offset-2 ring-offset-[#111] ring-gray-400' : ''}`}></button>
+                <button onClick={() => { const ctx = boardRef.current?.getContext('2d'); ctx?.clearRect(0,0,boardRef.current!.width, boardRef.current!.height); }} className="text-[10px] font-mono ml-2 text-red-500 hover:text-red-400 border border-red-900/50 px-2 py-1 bg-red-900/20 uppercase tracking-widest">Очистити</button>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowBoard(false)} className="text-[10px] font-mono font-bold text-white bg-[#222] border border-[#444] hover:bg-[#333] px-4 py-2 uppercase tracking-widest">Скасувати</button>
+                <button onClick={sendBoard} className="text-[10px] font-mono font-bold text-black bg-[var(--ab3-gold)] hover:bg-yellow-400 px-4 py-2 shadow-[0_0_15px_rgba(201,162,39,0.3)] uppercase tracking-widest">Відправити схему</button>
+              </div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowBoard(false)} className="text-xs font-mono font-bold text-white bg-[#222] border border-[#444] hover:bg-[#333] px-6 py-2">СКАСУВАТИ</button>
-              <button onClick={sendBoard} className="text-xs font-mono font-bold text-black bg-[var(--ab3-gold)] hover:bg-yellow-400 px-6 py-2 shadow-[0_0_15px_rgba(201,162,39,0.3)]">ВІДПРАВИТИ СХЕМУ</button>
+            
+            <div className="flex gap-2 items-center flex-wrap pt-2 border-t border-[#222]">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 mr-1">Тактичні знаки:</span>
+                <button onClick={() => setActiveStamp('friendly_inf')} className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest border transition-colors ${activeStamp === 'friendly_inf' ? 'bg-blue-900/50 border-blue-500 text-white' : 'bg-black border-[#333] text-blue-400 hover:border-blue-500'}`}>🟦 Свої (Піхота)</button>
+                <button onClick={() => setActiveStamp('friendly_armor')} className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest border transition-colors ${activeStamp === 'friendly_armor' ? 'bg-blue-900/50 border-blue-500 text-white' : 'bg-black border-[#333] text-blue-400 hover:border-blue-500'}`}>🟦 Свої (Броня)</button>
+                <button onClick={() => setActiveStamp('enemy_inf')} className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest border transition-colors ${activeStamp === 'enemy_inf' ? 'bg-red-900/50 border-red-500 text-white' : 'bg-black border-[#333] text-red-400 hover:border-red-500'}`}>♦️ Ворог (Піхота)</button>
+                <button onClick={() => setActiveStamp('enemy_armor')} className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest border transition-colors ${activeStamp === 'enemy_armor' ? 'bg-red-900/50 border-red-500 text-white' : 'bg-black border-[#333] text-red-400 hover:border-red-500'}`}>♦️ Ворог (Броня)</button>
+                <button onClick={() => setActiveStamp('ksp')} className={`px-2 py-1 text-[10px] font-mono uppercase tracking-widest border transition-colors ${activeStamp === 'ksp' ? 'bg-yellow-900/50 border-yellow-500 text-white' : 'bg-black border-[#333] text-yellow-500 hover:border-yellow-500'}`}>🟧 КСП</button>
             </div>
           </div>
           <canvas ref={boardRef} width={window.innerWidth} height={window.innerHeight} className="flex-1 w-full bg-[#050505] cursor-crosshair touch-none"

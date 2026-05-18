@@ -2,6 +2,7 @@ import React, { ReactNode, useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@stores/index';
 import { NotificationBell } from './NotificationBell';
+import { api } from '@services/api';
 
 interface LayoutProps {
   children: ReactNode;
@@ -258,8 +259,31 @@ const MatrixRain = () => {
   );
 };
 
+// --- ТАКТИЧНИЙ ГОДИННИК ---
+const TacticalClock = () => {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="hidden sm:flex flex-col items-end justify-center mr-4 border-r border-[#333] pr-4">
+      <span className="font-mono text-[13px] font-bold tracking-[0.2em] text-[var(--ab3-gold)] drop-shadow-[0_0_5px_rgba(201,162,39,0.5)]">
+        {time.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv', hour12: false })}
+      </span>
+      <span className="font-mono text-[8px] uppercase tracking-widest text-gray-500 flex items-center gap-1 mt-0.5">
+        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+        KYIV TIME
+      </span>
+    </div>
+  );
+};
+
+
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -276,6 +300,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchRefDesktop = useRef<HTMLDivElement>(null);
   const searchRefMobile = useRef<HTMLDivElement>(null);
+
+  // Глобальне завантаження повного профілю для оновлення сайдбару
+  useEffect(() => {
+    if (user?.id) {
+      api.get('/users/me-extended').then(res => {
+        if (res.data?.data) {
+          setUser({ ...user, ...res.data.data } as any);
+        }
+      }).catch(() => {});
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -314,7 +349,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // --- Dead Man's Switch (Автовикид при неактивності) ---
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
+    let lastExecution = 0;
     const resetTimer = () => {
+      const now = Date.now();
+      if (now - lastExecution < 5000) return; // Оновлюємо таймер не частіше ніж раз на 5 секунд (Оптимізація CPU)
+      lastExecution = now;
       clearTimeout(timeout);
       // 1 година без активності = авто-вихід (для безпеки пристрою на позиціях)
       timeout = setTimeout(() => {
@@ -485,6 +524,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
               )}
             </div>
+
+            <TacticalClock />
 
         {/* Tactical Theme Toggle */}
         <button

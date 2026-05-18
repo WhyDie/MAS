@@ -301,6 +301,17 @@ export const LoginForm: React.FC = () => {
               </Link>
             </p>
           </div>
+          {modal?.isOpen && (
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+              <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] p-6 max-w-md w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden font-mono">
+                <h3 className="text-lg font-black uppercase tracking-widest mb-3 text-[var(--ab3-gold)]">{modal.title}</h3>
+                <p className="text-sm text-gray-300 mb-6">{modal.message}</p>
+                <div className="flex gap-4">
+                  <button onClick={() => setModal(null)} className="flex-1 bg-[#111] border border-[#333] text-white font-bold uppercase tracking-widest px-4 py-2">Закрити</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

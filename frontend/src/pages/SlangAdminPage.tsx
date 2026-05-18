@@ -5,6 +5,7 @@ export const SlangAdminPage: React.FC = () => {
   const [terms, setTerms] = useState<any[]>([]);
   const [form, setForm] = useState({ id: '', term: '', description: '' });
   const [isEditing, setIsEditing] = useState(false);
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, onConfirm?: () => void} | null>(null);
 
   useEffect(() => { loadTerms(); }, []);
 
@@ -23,14 +24,21 @@ export const SlangAdminPage: React.FC = () => {
       setForm({ id: '', term: '', description: '' });
       setIsEditing(false);
       loadTerms();
-    } catch (e) { alert('Помилка збереження'); }
+    } catch (e) { setModal({ isOpen: true, title: 'ПОМИЛКА', message: 'Не вдалося зберегти термін.' }); }
   };
 
   const editTerm = (t: any) => { setForm(t); setIsEditing(true); window.scrollTo(0,0); };
   const deleteTerm = async (id: string) => {
-    if(!window.confirm('Видалити термін?')) return;
-    await api.delete(`/slang/${id}`);
-    loadTerms();
+    setModal({
+      isOpen: true,
+      title: 'ВИДАЛЕННЯ ТЕРМІНУ',
+      message: 'Ви дійсно бажаєте безповоротно видалити цей термін з військового словника?',
+      onConfirm: async () => {
+        await api.delete(`/slang/${id}`);
+        loadTerms();
+        setModal(null);
+      }
+    });
   };
 
   return (
@@ -81,6 +89,23 @@ export const SlangAdminPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* TACTICAL MODAL */}
+      {modal?.isOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className={`bg-[#0a0a0a] border border-[#333] border-l-4 ${modal.title === 'ПОМИЛКА' || modal.title.includes('ВИДАЛЕННЯ') ? 'border-l-red-500' : 'border-l-[var(--ab3-gold)]'} p-8 max-w-md w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden font-mono`}>
+            <div className={`absolute top-0 right-0 w-32 h-32 ${modal.title === 'ПОМИЛКА' || modal.title.includes('ВИДАЛЕННЯ') ? 'bg-red-500' : 'bg-[var(--ab3-gold)]'} opacity-10 blur-2xl pointer-events-none`}></div>
+            <h3 className={`text-xl font-black uppercase tracking-widest mb-3 flex items-center gap-3 ${modal.title === 'ПОМИЛКА' || modal.title.includes('ВИДАЛЕННЯ') ? 'text-red-500' : 'text-[var(--ab3-gold)]'}`}>
+              <span className="text-white">!</span> {modal.title}
+            </h3>
+            <p className="text-xs text-gray-300 mb-8 leading-relaxed uppercase tracking-widest">{modal.message}</p>
+            <div className="flex gap-4">
+              {modal.onConfirm && <button onClick={modal.onConfirm} className="w-full font-bold uppercase tracking-widest px-4 py-3 transition-colors bg-red-900/30 border border-red-900 text-red-500 hover:bg-red-600 hover:text-white">ПІДТВЕРДИТИ</button>}
+              <button onClick={() => setModal(null)} className="w-full bg-[#111] border border-[#333] text-white font-bold uppercase tracking-widest px-4 py-3 hover:bg-[#222] transition-colors">{modal.onConfirm ? 'СКАСУВАТИ' : 'ЗАКРИТИ'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

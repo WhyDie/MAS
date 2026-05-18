@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
+import { useAuthStore } from '@stores/index';
 
 export const MentorDashboardPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'requests' | 'mentees'>('requests');
+  const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'requests' | 'analytics'>('requests');
   const [requests, setRequests] = useState<any[]>([]);
   const [mentees, setMentees] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
@@ -17,11 +19,8 @@ export const MentorDashboardPage: React.FC = () => {
     setLoading(true);
     try {
       const [myReqRes, allReqRes, menRes] = await Promise.all([
-        // 1. Мої вже призначені запити
         api.get('/mentorship/requests').catch(() => ({ data: [] })),
-        // 2. Всі запити системи (щоб знайти "нічийні" відкриті)
         api.get('/mentorship/all-requests').catch(() => ({ data: [] })),
-        // 3. Мої підопічні
         api.get('/mentorship/mentees').catch(() => ({ data: [] }))
       ]);
       
@@ -29,11 +28,9 @@ export const MentorDashboardPage: React.FC = () => {
       const allReqs = Array.isArray(allReqRes.data?.data) ? allReqRes.data.data : (Array.isArray(allReqRes.data) ? allReqRes.data : []);
       
       const reqMap = new Map();
-      // Спочатку додаємо всі "нічийні" або відкриті запити
       allReqs.forEach((r: any) => {
         if (r.status === 'open' || r.status === 'new' || !r.mentorId) reqMap.set(r.id, r);
       });
-      // Потім перезаписуємо моїми запитами
       myReqs.forEach((r: any) => {
         const existing = reqMap.get(r.id);
         if (existing && existing.recruit && !r.recruit) r.recruit = existing.recruit;
@@ -45,7 +42,11 @@ export const MentorDashboardPage: React.FC = () => {
       });
 
       setRequests(combined);
-      setMentees(menRes.data?.data || menRes.data || []);
+      const menteesData = menRes.data?.data || menRes.data || [];
+      // Додаємо самого себе (ментора) до списку, якщо він є в підрозділі
+      const selfInList = menteesData.find((m: any) => m.id === user?.id);
+      if (!selfInList && user) menteesData.push({ id: user.id, name: `${user.firstName} ${user.lastName}`, rank: user.rank, isSelf: true });
+      setMentees(menteesData);
     } catch (err) {
       console.error('Failed to load mentor data:', err);
     } finally {
@@ -56,7 +57,6 @@ export const MentorDashboardPage: React.FC = () => {
   const updateRequestStatus = async (id: string | number, status: string, responseText?: string) => {
     try {
       await api.put(`/mentorship/requests/${id}/status`, { status, response: responseText });
-      // Якщо беремо в роботу, можливо бекенд також вимагає окремого запиту на призначення
       if (status === 'in_progress') {
         await api.post(`/mentorship/requests/${id}/assign`).catch(() => {});
       }
@@ -88,8 +88,8 @@ export const MentorDashboardPage: React.FC = () => {
               <span className="bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] ml-2">{requests.filter(r => r.status === 'open' || r.status === 'new').length}</span>
             )}
           </button>
-          <button onClick={() => setActiveTab('mentees')} className="btn w-full flex items-center justify-center text-center" style={{ background: activeTab === 'mentees' ? 'var(--gradient-gold)' : 'transparent', color: activeTab === 'mentees' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${activeTab === 'mentees' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 18px', fontSize: '13px' }}>
-            👥 Мої підопічні
+          <button onClick={() => setActiveTab('analytics')} className="btn w-full flex items-center justify-center text-center" style={{ background: activeTab === 'analytics' ? 'var(--gradient-gold)' : 'transparent', color: activeTab === 'analytics' ? 'var(--ab3-black)' : 'var(--text-muted)', border: `1px solid ${activeTab === 'analytics' ? 'var(--ab3-gold)' : '#333'}`, padding: '10px 18px', fontSize: '13px' }}>
+            📊 Аналітика та Прогрес
           </button>
         </div>
       </div>
@@ -146,27 +146,42 @@ export const MentorDashboardPage: React.FC = () => {
       )}
 
       {/* Mentees Content */}
-      {activeTab === 'mentees' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mentees.map(m => (
-            <div key={m.id} className="p-6 bg-[#0a0a0a] border border-[#333] animate-fade-in-up">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-none bg-[#111] border border-[#333] flex items-center justify-center text-xl">👤</div>
-                <div>
-                  <h4 className="font-bold text-white">{m.name}</h4>
-                  <p className="text-xs text-[var(--ab3-gold)]">{m.rank}</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-400 mb-2">{m.status}</p>
-              <div className="w-full h-2 bg-[#222] mb-4">
-                <div className="h-full transition-all duration-1000" style={{ background: 'var(--gradient-gold)', width: `${m.progress}%` }}></div>
-              </div>
-              <div className="flex gap-2 mt-4">
-              <button onClick={() => alert('Детальна статистика у розробці')} className="btn flex-1 text-xs" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-primary)' }}>📊 Прогрес</button>
-              <button onClick={() => alert('Внутрішній чат з бійцем зʼявиться у наступному оновленні!')} className="btn flex-1 text-xs" style={{ background: '#111', border: '1px solid #333', color: 'var(--text-primary)' }}>💬 Написати</button>
-              </div>
-            </div>
-          ))}
+      {activeTab === 'analytics' && (
+        <div className="bg-[#050505] border border-[#333] shadow-[8px_8px_0_0_#111]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#222] bg-[#0a0a0a]">
+                  <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal">ПІБ / Звання</th>
+                  <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal text-center">Модулі</th>
+                  <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal text-center">Симулятори (Бал)</th>
+                  <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal text-center">Запити</th>
+                  <th className="p-4 text-[10px] font-mono text-gray-500 uppercase tracking-widest font-normal text-right">Остання активність</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mentees.map(m => (
+                  <tr key={m.id} className="border-b border-[#111] hover:bg-[#111] transition-colors group">
+                    <td className="p-4">
+                      <p className="font-bold text-white">{m.name}</p>
+                      <p className="text-xs text-[var(--ab3-gold)]">{m.rank}</p>
+                    </td>
+                    <td className="p-4 text-center font-mono text-lg text-blue-400 font-bold">{m.completedModules || 0}</td>
+                    <td className="p-4 text-center font-mono text-lg font-bold" style={{ color: (m.avgSimScore || 0) >= 80 ? '#22c55e' : (m.avgSimScore || 0) >= 50 ? '#f59e0b' : '#ef4444' }}>
+                      {m.avgSimScore || 0}%
+                    </td>
+                    <td className="p-4 text-center font-mono text-lg text-gray-400 font-bold">{m.requestsCount || 0}</td>
+                    <td className="p-4 text-right font-mono text-xs text-gray-500">
+                      {m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleDateString('uk-UA') : 'Ніколи'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {mentees.length === 0 && (
+              <div className="p-10 text-center font-mono text-gray-500 text-xs uppercase tracking-widest">У вас немає активних підопічних</div>
+            )}
+          </div>
         </div>
       )}
     </div>
