@@ -38,7 +38,7 @@ import { SlangDictionaryPage } from '@pages/SlangDictionaryPage';
 import { SlangAdminPage } from '@pages/SlangAdminPage';
 import { VisualGearPage } from '@pages/VisualGearPage';
 import { Navigate } from 'react-router-dom';
-import { authService } from '@services/api';
+import { authService, api } from '@services/api';
 import { useAuthStore } from '@stores/index';
 import '@styles/index.css';
 
