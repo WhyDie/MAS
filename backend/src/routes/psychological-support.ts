@@ -6,6 +6,41 @@ import * as crypto from 'crypto';
 
 const router = Router();
 
+// Ініціалізація таблиць при старті сервера (щоб не навантажувати БД під час запитів)
+AppDataSource.query(`
+  CREATE TABLE IF NOT EXISTS "psychological_support" (
+    "id" varchar PRIMARY KEY,
+    "userId" varchar,
+    "message" text,
+    "contactType" varchar DEFAULT 'anonymous',
+    "psychologistId" varchar,
+    "response" text,
+    "respondedAt" datetime,
+    "respondedByUserId" varchar,
+    "status" varchar DEFAULT 'pending',
+    "severity" varchar DEFAULT 'medium',
+    "keywords" text,
+    "isEscalated" boolean DEFAULT 0,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`).then(() => {
+  AppDataSource.query('ALTER TABLE "psychological_support" ADD COLUMN "message" text').catch(() => {});
+  AppDataSource.query('ALTER TABLE "psychological_support" ADD COLUMN "contactType" varchar DEFAULT \'anonymous\'').catch(() => {});
+  AppDataSource.query('ALTER TABLE "psychological_support" ADD COLUMN "severity" varchar DEFAULT \'medium\'').catch(() => {});
+  AppDataSource.query('ALTER TABLE "psychological_support" ADD COLUMN "isEscalated" boolean DEFAULT 0').catch(() => {});
+}).catch(() => {});
+
+AppDataSource.query(`
+  CREATE TABLE IF NOT EXISTS "mood_logs" (
+    "id" varchar PRIMARY KEY,
+    "userId" varchar NOT NULL,
+    "mood" integer NOT NULL,
+    "notes" text,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`).catch(() => {});
+
 const getUserId = (req: any) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) throw new Error('Unauthorized');
@@ -90,42 +125,6 @@ const createRequest = async (req: any, res: any) => {
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
-    // Ensure table exists with all columns
-    try {
-      await AppDataSource.query(`
-        CREATE TABLE IF NOT EXISTS "psychological_support" (
-          "id" varchar PRIMARY KEY,
-          "userId" varchar,
-          "message" text,
-          "contactType" varchar DEFAULT 'anonymous',
-          "psychologistId" varchar,
-          "response" text,
-          "respondedAt" datetime,
-          "respondedByUserId" varchar,
-          "status" varchar DEFAULT 'pending',
-          "severity" varchar DEFAULT 'medium',
-          "keywords" text,
-          "isEscalated" boolean DEFAULT 0,
-          "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
-        )
-      `).catch(() => {});
-    } catch(e) { console.error('Create table error:', e); }
-
-    // Add missing columns if they don't exist
-    const columnsToAdd = [
-      { name: 'message', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "message" text' },
-      { name: 'contactType', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "contactType" varchar DEFAULT \'anonymous\'' },
-      { name: 'severity', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "severity" varchar DEFAULT \'medium\'' },
-      { name: 'isEscalated', sql: 'ALTER TABLE "psychological_support" ADD COLUMN "isEscalated" boolean DEFAULT 0' },
-    ];
-    
-    for (const col of columnsToAdd) {
-      try {
-        await AppDataSource.query(col.sql).catch(() => {});
-      } catch(e) {}
-    }
-
     await AppDataSource.query(
       'INSERT INTO "psychological_support" ("id", "userId", "message", "contactType", "severity", "status", "isEscalated", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [id, userId, message, contactType, severity, status, isEscalated ? 1 : 0, createdAt, createdAt]
@@ -191,16 +190,6 @@ router.post('/mood', async (req, res) => {
     if (typeof mood !== 'number' || mood < 1 || mood > 10) {
       return sendError(res, 'Невірне значення настрою', 400);
     }
-
-    await AppDataSource.query(`
-      CREATE TABLE IF NOT EXISTS "mood_logs" (
-        "id" varchar PRIMARY KEY,
-        "userId" varchar NOT NULL,
-        "mood" integer NOT NULL,
-        "notes" text,
-        "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
-      )
-    `).catch(() => {});
 
     await AppDataSource.query(
       'INSERT INTO "mood_logs" ("id", "userId", "mood", "notes") VALUES (?, ?, ?, ?)',

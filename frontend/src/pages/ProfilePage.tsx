@@ -31,13 +31,13 @@ const PREDEFINED_ICONS = ['👤', '🪖', '🦅', '🐺', '🦉', '🐻', '🐍'
 export const ProfilePage: React.FC = () => {
   const { user, setUser, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'security' | 'admin-resets'>('info');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   // Edit profile
   const [editMode, setEditMode] = useState(false);
-  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', middleName: '', callsign: '', rank: '', position: '', civilProfession: '', icon: '', signature: '' });
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', middleName: '', callsign: '', rank: '', position: '', civilProfession: '', icon: '', signature: '', birthDate: '', serviceStartDate: '', contractEndDate: '', weaponName: '', weaponNumber: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const sigCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawingSig, setIsDrawingSig] = useState(false);
@@ -75,7 +75,32 @@ export const ProfilePage: React.FC = () => {
         civilProfession: user.civilProfession || '',
         icon: (user as any).profilePictureUrl || (user as any).icon || '',
         signature: (user as any).signature || '',
+        birthDate: (user as any).birthDate || '',
+        serviceStartDate: (user as any).serviceStartDate || '',
+        contractEndDate: (user as any).contractEndDate || '',
+        weaponName: (user as any).weaponName || '',
+        weaponNumber: (user as any).weaponNumber || '',
       });
+
+      // Дозавантажуємо всі розширені поля з БД (на випадок якщо auth store має не повні дані)
+      api.get('/users/me-extended').then(res => {
+        if (res.data && res.data.data) {
+          const extUser = res.data.data;
+          setProfileForm(prev => ({
+            ...prev,
+            middleName: extUser.middleName || prev.middleName,
+            birthDate: extUser.birthDate || prev.birthDate,
+            serviceStartDate: extUser.serviceStartDate || prev.serviceStartDate,
+            contractEndDate: extUser.contractEndDate || prev.contractEndDate,
+            weaponName: extUser.weaponName || prev.weaponName,
+            weaponNumber: extUser.weaponNumber || prev.weaponNumber,
+            callsign: extUser.callsign || prev.callsign,
+            signature: extUser.signature || prev.signature,
+            firstName: extUser.firstName || prev.firstName,
+            lastName: extUser.lastName || prev.lastName,
+          }));
+        }
+      }).catch(() => {});
 
       // Завантажуємо поточні налаштування 2FA
       const twoFactorStatus = (user as any).twoFactorStatus || {};
@@ -295,7 +320,6 @@ export const ProfilePage: React.FC = () => {
   const handleResetAction = async (id: string, action: 'approve' | 'reject') => {
     try {
       const res = await api.post(`/auth/password-reset/${id}/${action}`);
-      alert(res.data.message);
       if (action === 'approve' && res.data.code) {
         setModal({ isOpen: true, title: 'КОД ЗГЕНЕРОВАНО', message: `Увага! Передайте цей код доступу бійцю по безпечному каналу зв'язку: ${res.data.code}` });
       } else {
@@ -401,9 +425,9 @@ export const ProfilePage: React.FC = () => {
 
       {/* ===== PROFILE TAB ===== */}
       {activeTab === 'info' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 ${editMode ? 'justify-items-center' : 'lg:grid-cols-3'} gap-6 items-start`}>
           {/* Profile Card */}
-          <div className="lg:col-span-1">
+          <div className={editMode ? "w-full max-w-4xl" : "lg:col-span-1"}>
             <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
               <div className="text-center mb-6">
                 <div
@@ -435,65 +459,105 @@ export const ProfilePage: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Ім'я</label>
-                    <input className="input" value={profileForm.firstName} onChange={e => setProfileForm({ ...profileForm, firstName: e.target.value })} placeholder="Іван" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Прізвище</label>
-                    <input className="input" value={profileForm.lastName} onChange={e => setProfileForm({ ...profileForm, lastName: e.target.value })} placeholder="Коваленко" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>По батькові</label>
-                    <input className="input" value={profileForm.middleName} onChange={e => setProfileForm({ ...profileForm, middleName: e.target.value })} placeholder="Іванович" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Позивний</label>
-                    <input className="input" value={profileForm.callsign} onChange={e => setProfileForm({ ...profileForm, callsign: e.target.value })} placeholder="Сокіл" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Звання</label>
-                    <input className="input" value={profileForm.rank} onChange={e => setProfileForm({ ...profileForm, rank: e.target.value })} placeholder="Рядовий" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Посада</label>
-                    <input className="input" value={profileForm.position} onChange={e => setProfileForm({ ...profileForm, position: e.target.value })} placeholder="Стрілець" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Цивільна професія</label>
-                    <input className="input" value={profileForm.civilProfession} onChange={e => setProfileForm({ ...profileForm, civilProfession: e.target.value })} placeholder="Інженер" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Іконка профілю</label>
+                  <fieldset className="border border-[#333] p-4 bg-[#050505]">
+                    <legend className="px-2 text-xs font-mono text-[var(--ab3-gold)] uppercase tracking-widest font-bold">Особисті Дані</legend>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Прізвище</label>
+                        <input className="input text-sm" value={profileForm.lastName} onChange={e => setProfileForm({ ...profileForm, lastName: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Ім'я</label>
+                        <input className="input text-sm" value={profileForm.firstName} onChange={e => setProfileForm({ ...profileForm, firstName: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">По батькові</label>
+                        <input className="input text-sm" value={profileForm.middleName} onChange={e => setProfileForm({ ...profileForm, middleName: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Позивний</label>
+                        <input className="input text-sm" value={profileForm.callsign} onChange={e => setProfileForm({ ...profileForm, callsign: e.target.value })} />
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="border border-[#333] p-4 bg-[#050505]">
+                    <legend className="px-2 text-xs font-mono text-[var(--ab3-gold)] uppercase tracking-widest font-bold">Військова Служба</legend>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="md:col-span-1">
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Звання</label>
+                        <input className="input text-sm" value={profileForm.rank} onChange={e => setProfileForm({ ...profileForm, rank: e.target.value })} />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Посада</label>
+                        <input className="input text-sm" value={profileForm.position} onChange={e => setProfileForm({ ...profileForm, position: e.target.value })} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Дата народження</label>
+                        <input type="date" className="input text-sm w-full" value={profileForm.birthDate} onChange={e => setProfileForm({ ...profileForm, birthDate: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Початок служби</label>
+                        <input type="date" className="input text-sm w-full" value={profileForm.serviceStartDate} onChange={e => setProfileForm({ ...profileForm, serviceStartDate: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Кінець контракту</label>
+                        <input type="date" className="input text-sm w-full" value={profileForm.contractEndDate} onChange={e => setProfileForm({ ...profileForm, contractEndDate: e.target.value })} />
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="border border-[#333] p-4 bg-[#050505]">
+                    <legend className="px-2 text-xs font-mono text-[var(--ab3-gold)] uppercase tracking-widest font-bold">Озброєння та Додатково</legend>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Модель Зброї (АК/AR)</label>
+                        <input type="text" className="input text-sm w-full" value={profileForm.weaponName} onChange={e => setProfileForm({ ...profileForm, weaponName: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Номер Зброї</label>
+                        <input type="text" className="input text-sm w-full" value={profileForm.weaponNumber} onChange={e => setProfileForm({ ...profileForm, weaponNumber: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-1">Цивільна професія</label>
+                      <input className="input text-sm" value={profileForm.civilProfession} onChange={e => setProfileForm({ ...profileForm, civilProfession: e.target.value })} />
+                    </div>
+                  </fieldset>
+
+                  <fieldset className="border border-[#333] p-4 bg-[#050505]">
+                    <legend className="px-2 text-xs font-mono text-[var(--ab3-gold)] uppercase tracking-widest font-bold">Ідентифікатори Системи</legend>
+                    <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-2">Аватар / Іконка</label>
                     <div className="flex flex-wrap gap-2">
                       {PREDEFINED_ICONS.map(icon => (
                         <button
                           key={icon}
                           type="button"
                           onClick={() => setProfileForm({ ...profileForm, icon })}
-                          className={`w-10 h-10 flex items-center justify-center text-xl rounded-none border transition-all ${profileForm.icon === icon ? 'border-[var(--ab3-gold)] bg-[rgba(201,162,39,0.15)]' : 'border-[#333] bg-[#111] hover:border-[#555]'}`}
+                          className={`w-12 h-12 flex items-center justify-center text-xl rounded-none border transition-all ${profileForm.icon === icon ? 'border-[var(--ab3-gold)] bg-[rgba(201,162,39,0.15)] shadow-inner' : 'border-[#333] bg-[#111] hover:border-[#555]'}`}
                         >
                           {icon}
                         </button>
                       ))}
                       <input type="file" accept="image/*" id="avatar-upload" className="hidden" onChange={handleFileUpload} />
-                      <label htmlFor="avatar-upload" className="px-3 h-10 flex items-center justify-center text-xs font-mono uppercase tracking-widest rounded-none border border-[#333] bg-[#111] hover:border-[#555] text-white cursor-pointer transition-all">
+                      <label htmlFor="avatar-upload" className="px-4 h-12 flex items-center justify-center text-[10px] font-mono uppercase tracking-widest rounded-none border border-[#333] bg-[#111] hover:border-[var(--ab3-gold)] text-gray-400 cursor-pointer transition-all hover:text-white">
                         📷 ФОТО
                       </label>
                       <button
                         type="button"
                         onClick={() => setProfileForm({ ...profileForm, icon: '' })}
-                        className={`px-3 h-10 flex items-center justify-center text-xs font-mono uppercase tracking-widest rounded-none border transition-all ${!profileForm.icon ? 'border-[var(--ab3-gold)] bg-[rgba(201,162,39,0.15)] text-[var(--ab3-gold)]' : 'border-[#333] bg-[#111] hover:border-[#555] text-white'}`}
+                        className={`px-4 h-12 flex items-center justify-center text-[10px] font-mono uppercase tracking-widest rounded-none border transition-all ${!profileForm.icon ? 'border-red-500 bg-red-900/20 text-red-500' : 'border-[#333] bg-[#111] hover:border-red-500 text-gray-500 hover:text-red-500'}`}
                       >
-                        бейзік
+                        ВИДАЛИТИ
                       </button>
                     </div>
-                  </div>
                   
                   {/* Малювання підпису */}
                   <div className="mt-4">
-                    <label className="block text-sm font-semibold mb-2 flex justify-between items-center" style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                      <span>Особистий підпис (для рапортів)</span>
+                    <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-2 flex justify-between items-center">
+                      <span>Особистий підпис (Для рапортів)</span>
                       <button type="button" onClick={() => { const ctx = sigCanvasRef.current?.getContext('2d'); ctx?.clearRect(0,0,300,100); setProfileForm(p => ({...p, signature: ''})) }} className="text-xs text-red-500 font-mono hover:underline">Очистити</button>
                     </label>
                     <div className="border border-[#333] bg-black p-1 inline-block">
@@ -505,10 +569,11 @@ export const ProfilePage: React.FC = () => {
                     </div>
                     <p className="text-[10px] font-mono text-gray-500 mt-1 uppercase tracking-widest">Малюйте мишкою або пальцем по екрану</p>
                   </div>
+                  </fieldset>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-4 pt-4 border-t border-[#333]">
                     <button onClick={saveProfile} disabled={savingProfile} className="btn btn-primary flex-1 disabled:opacity-50" style={{ padding: '10px 16px', fontSize: '13px' }}>{savingProfile ? '⏳...' : '💾 Зберегти'}</button>
-                    <button onClick={() => { setEditMode(false); setProfileForm({ firstName: user.firstName || '', lastName: user.lastName || '', middleName: (user as any).middleName || '', callsign: (user as any).callsign || '', rank: user.rank || '', position: user.position || '', civilProfession: user.civilProfession || '', icon: (user as any).profilePictureUrl || (user as any).icon || '', signature: (user as any).signature || '' }); }} className="btn flex-1" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 16px', fontSize: '13px' }}>Скасувати</button>
+                    <button onClick={() => { setEditMode(false); api.get('/users/me-extended').then(res => { if(res.data?.data) { setProfileForm(prev => ({...prev, ...res.data.data})); } }); }} className="btn flex-1" style={{ background: 'transparent', border: '1px solid #333', color: 'var(--text-muted)', padding: '10px 16px', fontSize: '13px' }}>Скасувати</button>
                   </div>
                 </div>
               )}
@@ -516,6 +581,7 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           {/* Info Cards */}
+          {!editMode && (
           <div className="lg:col-span-2 space-y-6">
             <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>📋 Основна інформація</h3>
@@ -526,15 +592,15 @@ export const ProfilePage: React.FC = () => {
                 </div>
                 <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🎖️ Звання</p>
-                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.rank || 'Не вказано'}</p>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{profileForm.rank || user.rank || 'Не вказано'}</p>
                 </div>
                 <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>💼 Посада</p>
-                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.position || 'Не вказано'}</p>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{profileForm.position || user.position || 'Не вказано'}</p>
                 </div>
                 <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🏢 Цивільна професія</p>
-                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.civilProfession || 'Не вказано'}</p>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{profileForm.civilProfession || user.civilProfession || 'Не вказано'}</p>
                 </div>
                 <div className="p-4 rounded-none bg-[#111]">
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🏷️ Роль</p>
@@ -544,9 +610,26 @@ export const ProfilePage: React.FC = () => {
                   <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🆔 ID</p>
                   <p className="font-semibold font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{user.id}</p>
                 </div>
+                <div className="p-4 rounded-none bg-[#111]">
+                  <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🎂 Дата народження</p>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{profileForm.birthDate ? new Date(profileForm.birthDate).toLocaleDateString('uk-UA') : 'Не вказано'}</p>
+                </div>
+                <div className="p-4 rounded-none bg-[#111]">
+                  <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>🛡️ Служба (Початок / Кінець)</p>
+                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {profileForm.serviceStartDate ? new Date(profileForm.serviceStartDate).toLocaleDateString('uk-UA') : '...'} - {profileForm.contractEndDate ? new Date(profileForm.contractEndDate).toLocaleDateString('uk-UA') : '...'}
+                  </p>
+                </div>
+                <div className="p-4 rounded-none bg-[#111] md:col-span-2">
+                  <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>⚔️ Закріплена зброя</p>
+                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  {profileForm.weaponName || 'Немає'} {(profileForm.weaponNumber) && <span className="font-mono text-gray-500 ml-2">#{profileForm.weaponNumber}</span>}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
 

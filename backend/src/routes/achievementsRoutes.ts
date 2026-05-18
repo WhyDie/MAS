@@ -95,8 +95,31 @@ router.get('/stats', async (req, res) => {
       psychRequests = parseInt(psychRes[0]?.cnt || 0);
     } catch(e) {}
 
+    // 5. Розрахунок днів служби (ДМБ Трекер)
+    let daysServed = 0;
+    let serviceStartDate = null;
+    let contractEndDate = null;
+    try {
+      const userRes = await AppDataSource.query(`SELECT "serviceStartDate", "contractEndDate" FROM "users" WHERE id = ?`, [userId]);
+      if (userRes[0] && userRes[0].serviceStartDate) {
+        serviceStartDate = userRes[0].serviceStartDate;
+        contractEndDate = userRes[0].contractEndDate;
+        const start = new Date(serviceStartDate).getTime();
+        const now = new Date().getTime();
+        if (now > start) {
+          daysServed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+        }
+      }
+    } catch(e) {}
+
     // 5. Розрахунок загального досвіду (XP)
-    const xp = (modulesCompleted * 100) + (simAttempts * 50) + (perfectSims * 100) + (mentorshipCompleted * 200) + (psychRequests * 50);
+    // Додаємо +10 XP за кожен день служби
+    const xp = (modulesCompleted * 100) + 
+               (simAttempts * 50) + 
+               (perfectSims * 100) + 
+               (mentorshipCompleted * 200) + 
+               (psychRequests * 50) + 
+               (daysServed * 10);
 
     sendSuccess(res, {
       modulesCompleted,
@@ -105,7 +128,10 @@ router.get('/stats', async (req, res) => {
       simAverageScore,
       mentorshipCompleted,
       psychRequests,
-      xp
+      xp,
+      daysServed,
+      serviceStartDate,
+      contractEndDate
     });
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);

@@ -124,9 +124,17 @@ export const HomePage: React.FC = () => {
     unread: 0,
     xp: 0,
     avgScore: 0,
-    nextEvent: null as any
+    nextEvent: null as any,
+    daysServed: 0,
+    serviceStartDate: null as string | null,
+    contractEndDate: null as string | null,
+    weaponName: null as string | null,
+    weaponNumber: null as string | null,
+    fullName: '',
+    unitName: null as string | null,
   });
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
+  const [activeTasks, setActiveTasks] = useState<any[]>([]);
 
   useEffect(() => {
     console.log("%c ТАКТИЧНУ СИСТЕМУ АКТИВОВАНО ", "background: #0a0a0a; color: #c9a227; font-size: 20px; font-weight: bold; border: 1px solid #c9a227;");
@@ -134,10 +142,13 @@ export const HomePage: React.FC = () => {
 
     const loadMetrics = async () => {
       try {
-        const [notifRes, statRes, schedRes] = await Promise.all([
+        const [notifRes, statRes, schedRes, tasksRes, extUserRes, unitRes] = await Promise.all([
           api.get('/notifications').catch(() => ({ data: { data: [] } })),
           api.get(`/achievements/stats?_t=${Date.now()}`).catch(() => ({ data: { data: { xp: 0, simAverageScore: 0 } } })),
-          api.get(`/schedule/events?startDate=${new Date().toISOString().split('T')[0]}&endDate=${new Date(Date.now() + 86400000).toISOString().split('T')[0]}`).catch(() => ({ data: { data: [] } }))
+          api.get(`/schedule/events?startDate=${new Date().toISOString().split('T')[0]}&endDate=${new Date(Date.now() + 86400000).toISOString().split('T')[0]}`).catch(() => ({ data: { data: [] } })),
+          api.get('/units/my/active-duties').catch(() => ({ data: { data: [] } })),
+          api.get('/users/me-extended').catch(() => ({ data: { data: null } })),
+          api.get('/units/my').catch(() => ({ data: { data: null } }))
         ]);
         
         const notifs = notifRes.data?.data || notifRes.data || [];
@@ -149,8 +160,22 @@ export const HomePage: React.FC = () => {
         const events = schedRes.data?.data || schedRes.data || [];
         const now = new Date();
         const upcoming = events.filter((e: any) => new Date(e.startTime) > now).sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        setActiveTasks(tasksRes.data?.data || []);
+        const extUser = extUserRes.data?.data || user;
         
-        setMetrics({ unread, xp, avgScore, nextEvent: upcoming[0] || null });
+        setMetrics({ 
+          unread, 
+          xp, 
+          avgScore, 
+          nextEvent: upcoming[0] || null,
+          daysServed: statRes.data?.data?.daysServed || 0,
+          serviceStartDate: statRes.data?.data?.serviceStartDate || null,
+          contractEndDate: statRes.data?.data?.contractEndDate || null,
+          weaponName: extUser?.weaponName || null,
+          weaponNumber: extUser?.weaponNumber || null,
+          fullName: `${extUser?.lastName || ''} ${extUser?.firstName || ''} ${extUser?.middleName || ''}`.trim(),
+          unitName: unitRes.data?.data?.name || null,
+        });
       } catch (e) {
         console.error(e);
       } finally {
@@ -161,6 +186,21 @@ export const HomePage: React.FC = () => {
   }, []);
 
   const rank = getRankInfo(metrics.xp);
+
+  // Розрахунок прогресу контракту
+  let contractProgress = 0;
+  let daysTotal = 0;
+  if (metrics.serviceStartDate && metrics.contractEndDate) {
+    const start = new Date(metrics.serviceStartDate).getTime();
+    const end = new Date(metrics.contractEndDate).getTime();
+    const now = new Date().getTime();
+    
+    if (end > start) {
+      daysTotal = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+      const passed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+      contractProgress = Math.min(100, Math.max(0, (passed / daysTotal) * 100));
+    }
+  }
 
   const modulesInfo = [
     {
@@ -405,6 +445,26 @@ export const HomePage: React.FC = () => {
       {/* ===== 1. HERO SECTION (100VH) ===== */}
       <div className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-center py-6 px-4 sm:px-8 border-b border-[#222]">
 
+        {/* Банер Активних Нарядів та Робіт */}
+        {activeTasks.length > 0 && (
+          <div className="max-w-6xl mx-auto w-full mb-6 relative z-20 animate-fade-in-down">
+            {activeTasks.map(task => (
+              <div key={task.id} className={`p-4 border-l-4 mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-lg ${task.type === 'work' ? 'bg-yellow-950/30 border-yellow-500' : 'bg-red-950/30 border-red-500'}`}>
+                <div>
+                  <h3 className={`font-heading font-black uppercase tracking-widest text-lg ${task.type === 'work' ? 'text-yellow-500' : 'text-red-500'}`}>
+                    {task.type === 'work' ? '🛠️ ВАС ПРИЗНАЧЕНО НА РОБОТИ' : '⚠️ ВАС ПРИЗНАЧЕНО В НАРЯД'}
+                  </h3>
+                  <p className="text-white font-bold mt-1 uppercase tracking-widest">{task.title}</p>
+                  <p className="text-gray-400 font-mono text-xs mt-1">ЧАС ВИКОНАННЯ: {task.timeRange || 'НЕ ВКАЗАНО'}</p>
+                </div>
+                <div className="mt-3 sm:mt-0 px-4 py-2 bg-black/50 border border-[#333] font-mono text-[10px] text-gray-300 uppercase tracking-widest">
+                  СТАТУС: АКТИВНО
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="relative z-10 max-w-6xl mx-auto w-full">
           
           <div className="relative bg-[#050505]/95 backdrop-blur-2xl border border-[#222] p-6 md:p-8 lg:p-10 shadow-[8px_8px_0_0_#0a0a0a] overflow-hidden group transition-all duration-700 hover:border-[#333]">
@@ -522,6 +582,71 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+          
+          {/* TACTICAL ID CARD / DMB */}
+          <div className="mt-4 bg-[#0a0a0a] border border-[#333] shadow-[8px_8px_0_0_#050505] relative overflow-hidden group smooth-enter delay-500">
+            {/* Decor */}
+            <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, #111 25%, #111 75%, #000 75%, #000)', backgroundPosition: '0 0, 10px 10px', backgroundSize: '20px 20px' }}></div>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--ab3-gold)] to-transparent opacity-50"></div>
+            <div className="absolute -left-10 top-1/2 w-20 h-32 bg-[var(--ab3-gold)] blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity"></div>
+
+            <div className="relative z-10 p-6">
+              <div className="flex flex-col lg:flex-row gap-8 justify-between">
+                
+                {/* Left Side: Identity */}
+                <div className="flex gap-6 items-start">
+                  <div className="w-20 h-24 bg-[#111] border-2 border-[#333] p-1 flex-shrink-0 relative">
+                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    {((user as any)?.profilePictureUrl) ? (
+                      <img src={(user as any).profilePictureUrl} className="w-full h-full object-cover grayscale contrast-125" alt="ID" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">👤</div>
+                    )}
+                  </div>
+                  <div className="font-mono">
+                    <div className="text-[10px] text-[var(--ab3-gold)] tracking-[0.3em] mb-1 uppercase">UKR ARMED FORCES // ID CARD</div>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-widest leading-none mb-1">
+                      {metrics.fullName || `${user?.lastName || ''} ${user?.firstName || ''}`.trim()}
+                    </h3>
+                    <p className="text-sm text-gray-400 tracking-widest uppercase mb-4">{(user as any)?.callsign ? `"${(user as any).callsign}"` : ''} | {user?.rank || 'ЗВАННЯ НЕ ВСТАНОВЛЕНО'}</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-[10px] text-gray-500 tracking-widest uppercase">
+                      <p>ID: <span className="text-gray-300">{user?.id?.split('-')[0]}</span></p>
+                      <p>ПІДРОЗДІЛ: <span className="text-[var(--ab3-gold)] font-bold">{metrics.unitName || 'ПОЗА ШТАТОМ'}</span></p>
+                      <p>ПОСАДА: <span className="text-gray-300">{user?.position || 'НЕМАЄ'}</span></p>
+                      <p>ЗБРОЯ: <span className="text-gray-300">{metrics.weaponName || 'НЕ ЗАКРІПЛЕНО'} {metrics.weaponNumber ? `#${metrics.weaponNumber}` : ''}</span></p>
+                      <p className="md:col-span-2">СТАТУС: <span className="text-green-500 font-bold bg-green-900/20 px-2 py-0.5 border border-green-900">В СТРОЮ</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: DMB Progress */}
+                <div className="flex-1 lg:max-w-md flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-[#333] pt-6 lg:pt-0 lg:pl-8">
+                  <div className="flex justify-between items-end mb-2">
+                    <div>
+                      <p className="text-[10px] font-mono text-[var(--ab3-gold)] tracking-widest uppercase">ТРИВАЛІСТЬ СЛУЖБИ</p>
+                      <p className="text-3xl font-heading font-black text-white tracking-wider">{metrics.daysServed} <span className="text-sm text-gray-500">ДНІВ</span></p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-mono text-gray-500 tracking-widest uppercase">ПРОГРЕС</p>
+                      <p className="text-xl font-mono font-bold text-[var(--ab3-gold)]">{metrics.contractEndDate ? `${Math.floor(contractProgress)}%` : '∞'}</p>
+                    </div>
+                  </div>
+                  <div className="h-3 w-full bg-black border border-[#333] p-0.5 relative">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgNDBsNDAtNDBIMzBMMCAzMHYxMHptMjAgMGwyMC0yMEgzMEwwIDIwdjEweiIgZmlsbD0iIzIyMiIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-20 pointer-events-none"></div>
+                    <div className="h-full bg-[var(--ab3-gold)] shadow-[0_0_10px_rgba(201,162,39,0.5)] transition-all duration-1000 relative overflow-hidden" style={{ width: `${contractProgress}%` }}>
+                       <div className="absolute top-0 left-0 w-full h-full bg-white/20 animate-[pulse_2s_ease-in-out_infinite]"></div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-2 text-[9px] font-mono text-gray-600 tracking-widest uppercase">
+                    <span>{metrics.serviceStartDate ? new Date(metrics.serviceStartDate).toLocaleDateString('uk-UA') : 'ПОЧАТОК'}</span>
+                    <span>{metrics.contractEndDate ? new Date(metrics.contractEndDate).toLocaleDateString('uk-UA') : 'ДЕМБЕЛЬ'}</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
         </div>
             </div>

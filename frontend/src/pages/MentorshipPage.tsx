@@ -27,10 +27,11 @@ interface MentorshipRequest {
 
 export const MentorshipPage: React.FC = () => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'browse' | 'my-requests' | 'create'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'my-requests' | 'create' | 'quests'>('browse');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string} | null>(null);
 
   // Browse state
   const [mentors, setMentors] = useState<MentorProfile[]>([]);
@@ -162,7 +163,7 @@ export const MentorshipPage: React.FC = () => {
   const reviewQuest = async (id: string, status: 'completed' | 'pending') => {
     try {
       await api.put(`/mentorship/quests/${id}/status`, { status });
-      setSuccess(status === 'completed' ? 'Завдання зараховано!' : 'Повернуто на доопрацювання');
+      setModal({isOpen: true, title: 'УСПІШНО', message: status === 'completed' ? 'Завдання зараховано!' : 'Повернуто на доопрацювання'});
       await fetchQuests();
     } catch(e: any) { setError(e.response?.data?.error || 'Помилка перевірки завдання'); }
   };
@@ -384,14 +385,8 @@ export const MentorshipPage: React.FC = () => {
           <div className="mb-6 p-6 bg-[#0a0a0a] border border-[#333]">
             <h2 className="text-xl font-heading font-black uppercase tracking-widest text-[var(--ab3-gold)] mb-2">БОЙОВІ ЗАВДАННЯ ВІД МЕНТОРА</h2>
             <p className="text-gray-400 font-mono text-sm leading-relaxed">Виконуйте практичні нормативи, призначені вашим наставником, щоб здобувати бойовий досвід (XP) та підвищувати кваліфікацію.</p>
-          </div>
-
-          {/* Form for mentors */}
-          {isMentorAllowed && (
-            <div className="mb-8 p-6 bg-[#111] border border-[var(--ab3-gold)] shadow-lg">
-              <h3 className="text-lg font-heading font-black uppercase tracking-widest text-[var(--ab3-gold)] mb-4">Призначити завдання підопічному</h3>
-              
-              {mentees.length === 0 ? (
+            {isMentorAllowed && (
+            mentees.length === 0 ? (
                 <div className="p-6 border border-red-900/50 bg-red-900/10 text-center">
                   <p className="text-red-500 font-mono text-sm uppercase tracking-widest font-bold mb-2">⚠️ У ВАС ПОКИ НЕМАЄ АКТИВНИХ ПІДОПІЧНИХ</p>
                   <p className="text-gray-400 font-mono text-xs uppercase tracking-widest leading-relaxed">
@@ -399,35 +394,38 @@ export const MentorshipPage: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleCreateQuest} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-gray-500 mb-1">Підопічний *</label>
-                  <select className="input w-full" value={newQuest.recruitId} onChange={e => setNewQuest({...newQuest, recruitId: e.target.value})} required>
-                    <option value="">-- Оберіть бійця --</option>
-                    {mentees.map(m => <option key={m.id} value={m.id}>{m.rank} {m.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-gray-500 mb-1">Нагорода (XP) *</label>
-                  <input type="number" className="input w-full" value={newQuest.xp} onChange={e => setNewQuest({...newQuest, xp: parseInt(e.target.value) || 0})} min="10" max="1000" required />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-mono text-gray-500 mb-1">Назва завдання *</label>
-                  <input className="input w-full" value={newQuest.title} onChange={e => setNewQuest({...newQuest, title: e.target.value})} placeholder="Напр. Розбирання АК-74" required />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-mono text-gray-500 mb-1">Опис та умови виконання</label>
-                  <textarea className="input w-full" rows={2} value={newQuest.desc} onChange={e => setNewQuest({...newQuest, desc: e.target.value})} placeholder="Вкластися в 15 секунд..."></textarea>
-                </div>
-                <div className="md:col-span-2 mt-2">
-                  <button type="submit" disabled={loading} className="w-full bg-[var(--ab3-gold)] text-black font-bold font-mono uppercase tracking-widest py-3 hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(201,162,39,0.2)]">
-                    {loading ? 'ОБРОБКА...' : 'ПРИЗНАЧИТИ КВЕСТ'}
-                  </button>
-                </div>
-                </form>
-              )}
-            </div>
-          )}
+                <details className="mt-6 border border-[#333] bg-[#050505] p-4 group">
+                  <summary className="font-mono text-xs uppercase tracking-widest text-[var(--ab3-gold)] cursor-pointer group-open:mb-4">Призначити нове завдання</summary>
+                  <form onSubmit={handleCreateQuest} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-mono text-gray-500 mb-1">Підопічний *</label>
+                      <select className="input w-full" value={newQuest.recruitId} onChange={e => setNewQuest({...newQuest, recruitId: e.target.value})} required>
+                        <option value="">-- Оберіть бійця --</option>
+                        {mentees.map(m => <option key={m.id} value={m.id}>{m.rank} {m.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono text-gray-500 mb-1">Нагорода (XP) *</label>
+                      <input type="number" className="input w-full" value={newQuest.xp} onChange={e => setNewQuest({...newQuest, xp: parseInt(e.target.value) || 0})} min="10" max="1000" required />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-mono text-gray-500 mb-1">Назва завдання *</label>
+                      <input className="input w-full" value={newQuest.title} onChange={e => setNewQuest({...newQuest, title: e.target.value})} placeholder="Напр. Розбирання АК-74" required />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-mono text-gray-500 mb-1">Опис та умови виконання</label>
+                      <textarea className="input w-full" rows={2} value={newQuest.desc} onChange={e => setNewQuest({...newQuest, desc: e.target.value})} placeholder="Вкластися в 15 секунд..."></textarea>
+                    </div>
+                    <div className="md:col-span-2 mt-2">
+                      <button type="submit" disabled={loading} className="w-full bg-[var(--ab3-gold)] text-black font-bold font-mono uppercase tracking-widest py-3 hover:bg-yellow-400 transition-colors shadow-[0_0_15px_rgba(201,162,39,0.2)]">
+                        {loading ? 'ОБРОБКА...' : 'ПРИЗНАЧИТИ КВЕСТ'}
+                      </button>
+                    </div>
+                  </form>
+                </details>
+            )
+            )}
+          </div>
 
           <div className="space-y-4">
             {quests.length === 0 ? (
@@ -522,6 +520,22 @@ export const MentorshipPage: React.FC = () => {
           </form>
         </div>
       )}
+
+    {/* TACTICAL MODAL */}
+    {modal?.isOpen && (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="bg-[#0a0a0a] border border-[#333] border-l-4 border-l-[var(--ab3-gold)] p-8 max-w-md w-full shadow-[8px_8px_0_0_#111] animate-scale-in relative overflow-hidden font-mono">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--ab3-gold)] opacity-10 blur-2xl pointer-events-none"></div>
+          <h3 className="text-xl font-black uppercase tracking-widest mb-3 flex items-center gap-3 text-[var(--ab3-gold)]">
+            <span className="text-white">!</span> {modal.title}
+          </h3>
+          <p className="text-xs text-gray-300 mb-8 leading-relaxed uppercase tracking-widest">{modal.message}</p>
+          <div className="flex gap-4">
+            <button onClick={() => setModal(null)} className="w-full bg-[#111] border border-[#333] text-white font-bold uppercase tracking-widest px-4 py-3 hover:bg-[#222] transition-colors">ЗАКРИТИ</button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

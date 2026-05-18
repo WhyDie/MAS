@@ -60,11 +60,12 @@ router.get('/mentees', async (req, res) => {
     const mentorId = String(decoded.userId || decoded.tempId);
 
     const mentees = await AppDataSource.query(
-      `SELECT DISTINCT u.id, u."firstName", u."lastName", u.rank, m.status 
-       FROM "mentorship_requests" m 
-       JOIN "users" u ON m."recruitId" = u.id 
-       WHERE m."mentorId" = ? AND m.status IN ('in_progress', 'assigned')`,
-      [mentorId]
+      `SELECT DISTINCT u.id, u."firstName", u."lastName", u.rank, m.status
+       FROM "users" u
+       JOIN "mentorship_requests" m ON u.id = m."recruitId"
+       WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?)
+       AND m.status IN ('open', 'assigned', 'in_progress')`,
+      [mentorId] // Знаходимо всіх, хто подав запит у моєму підрозділі
     );
 
     let totalModules = 1;
@@ -74,14 +75,26 @@ router.get('/mentees', async (req, res) => {
     } catch(e) {}
 
     const formattedMentees = await Promise.all(mentees.map(async (m: any) => {
-      let progress = 0;
+      let completedModules = 0;
+      let simAttempts = 0;
+      let avgSimScore = 0;
+      let requestsCount = 0;
+
       try {
-        const progRes = await AppDataSource.query(`SELECT COUNT(*) as cnt FROM "xt_user_progress" WHERE "userId" = ? AND "status" = 'completed'`, [m.id]);
-        const completed = progRes[0] ? parseInt(progRes[0].cnt) : 0;
-        progress = Math.min(100, Math.round((completed / totalModules) * 100));
+        const [progRes, simRes, reqRes] = await Promise.all([
+          AppDataSource.query(`SELECT COUNT(DISTINCT "moduleId") as cnt FROM "xt_user_progress" WHERE "userId" = ? AND "status" = 'completed'`, [m.id]),
+          AppDataSource.query(`SELECT AVG(score) as avgScore, COUNT(*) as attempts FROM "xt_simulator_attempts" WHERE "userId" = ?`, [m.id]),
+          AppDataSource.query(`SELECT COUNT(*) as cnt FROM "mentorship_requests" WHERE "recruitId" = ?`, [m.id])
+        ]);
+
+        completedModules = parseInt(progRes[0]?.cnt || '0');
+        simAttempts = parseInt(simRes[0]?.attempts || '0');
+        avgSimScore = Math.round(parseFloat(simRes[0]?.avgscore || '0'));
+        requestsCount = parseInt(reqRes[0]?.cnt || '0');
+
       } catch(e) {}
       
-      return { id: m.id, name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || 'Невідомий', rank: m.rank || 'Боєць', status: m.status === 'in_progress' ? 'Активне менторство' : m.status, progress: progress > 0 ? progress : 5 };
+      return { id: m.id, name: `${m.firstName || ''} ${m.lastName || ''}`.trim() || 'Невідомий', rank: m.rank || 'Боєць', status: m.status, lastLoginAt: m.lastLoginAt, completedModules, simAttempts, avgSimScore, requestsCount };
     }));
 
     sendSuccess(res, formattedMentees);
