@@ -189,12 +189,12 @@ export const TrainingAdminPage: React.FC = () => {
     try {
       setLoading(true);
 
-      let parsedTags = form.tags;
+      let parsedTags: any = form.tags;
       if (typeof parsedTags === 'string') {
         try {
           parsedTags = JSON.parse(parsedTags);
         } catch (e) {
-          parsedTags = parsedTags.split(',').map(t => t.trim()).filter(Boolean) as any;
+          parsedTags = (form.tags as string).split(',').map(t => t.trim()).filter(Boolean) as any;
         }
       }
 

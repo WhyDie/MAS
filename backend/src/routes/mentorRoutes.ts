@@ -1,19 +1,16 @@
 import { Router } from 'express';
-import MentorRequest from '../models/MentorRequest';
 import { AppDataSource } from '../config/database';
 import { sendSuccess, sendError } from '../utils/response';
 import jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
-// import { protect, authorize } from '../middlewares/auth'; // розкоментуйте ваші мідлвари
 
 const router = Router();
-const mentorRequestRepository = AppDataSource.getRepository(MentorRequest);
 
 // Отримати всі запити (для ментора)
-router.get('/requests', /* protect, authorize('mentor', 'commander', 'admin'), */ async (req, res) => {
+router.get('/requests', async (req, res) => {
   try {
     // У реальному додатку ви б фільтрували по req.user.id
-    const requests = await mentorRequestRepository.find({ order: { createdAt: 'DESC' } });
+    const requests = await AppDataSource.query('SELECT * FROM "mentorship_requests" ORDER BY "createdAt" DESC');
     sendSuccess(res, requests);
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);
@@ -31,17 +28,22 @@ router.get('/all-requests', async (req, res) => {
 });
 
 // Оновити статус запиту (для ментора)
-router.put('/requests/:id/status', /* protect, */ async (req, res) => {
+router.put('/requests/:id/status', async (req, res) => {
   try {
     const { status, response } = req.body;
-    const request = await mentorRequestRepository.findOneBy({ id: req.params.id as any });
-    if (!request) {
+    const requests = await AppDataSource.query('SELECT * FROM "mentorship_requests" WHERE id = ?', [req.params.id]);
+    if (requests.length === 0) {
       return sendError(res, 'Запит не знайдено', 404);
     }
+    const request = requests[0];
+
     request.status = status;
-    if (response) (request as any).response = response;
-    if (status === 'completed' || status === 'resolved') (request as any).respondedAt = new Date();
-    await mentorRequestRepository.save(request);
+    if (response) request.response = response;
+
+    await AppDataSource.query(
+      'UPDATE "mentorship_requests" SET "status" = ?, "response" = ? WHERE "id" = ?',
+      [status, response || null, req.params.id]
+    );
     sendSuccess(res, request);
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);
@@ -49,7 +51,7 @@ router.put('/requests/:id/status', /* protect, */ async (req, res) => {
 });
 
 // Отримати список підопічних
-router.get('/mentees', /* protect, */ async (req, res) => {
+router.get('/mentees', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) return sendError(res, 'Unauthorized', 401);

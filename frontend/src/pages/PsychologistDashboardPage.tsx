@@ -5,7 +5,7 @@ export const PsychologistDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'analytics' | 'requests'>('analytics');
   const [moodStats, setMoodStats] = useState<any>({ totalPolled: 0, good: 0, normal: 0, stressed: 0, critical: 0 });
   const [supportRequests, setSupportRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
@@ -119,7 +119,6 @@ export const PsychologistDashboardPage: React.FC = () => {
           ) : (
             supportRequests.map(r => {
               const isNew = r.status === 'pending' || r.status === 'new';
-              const isInProgress = r.status === 'in_progress' || r.status === 'in-progress';
               const isResolved = r.status === 'resolved' || r.status === 'completed';
               const isAnon = r.contactType === 'anonymous' || r.isAnonymous;
               const soldierName = isAnon ? 'Анонімно' : (r.user ? `${r.user.rank || ''} ${r.user.firstName || ''} ${r.user.lastName || ''}`.trim() : r.type || 'Боєць');

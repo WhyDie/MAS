@@ -30,7 +30,7 @@ export class UserOnboarding {
   generatedTrajectory: {
     trajectory: string[];
     estimatedDuration: number;
-    difficulty: 'easy' | 'medium' | 'hard';
+    difficulty: 'легко' | 'нормально' | 'складно';
     roadmap: {
       week: number;
       title: string;

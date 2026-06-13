@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+/* import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMentorRequest extends Document {
   soldier: string;
@@ -36,3 +36,4 @@ const MentorRequestSchema: Schema = new Schema({
 });
 
 export default mongoose.model<IMentorRequest>('MentorRequest', MentorRequestSchema);
+*/

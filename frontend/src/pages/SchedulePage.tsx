@@ -36,7 +36,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 
 export const SchedulePage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams(); // Ініціалізуємо useSearchParams
+  const [searchParams] = useSearchParams(); // Ініціалізуємо useSearchParams
   const { user } = useAuthStore();
   
   const [apiEvents, setApiEvents] = useState<ApiEvent[]>([]);

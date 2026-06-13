@@ -128,7 +128,7 @@ function App() {
           const data = response.data?.data || response.data;
           if (data?.user) {
             // Одразу підтягуємо розширений профіль (з підписом), щоб він не зникав після F5
-            api.get('/users/profile-extended').then(extRes => {
+            api.get('/users/me-extended').then(extRes => {
               setUser({ ...data.user, ...extRes.data?.data });
             }).catch(() => {
               setUser(data.user);

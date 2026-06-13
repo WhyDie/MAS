@@ -62,6 +62,7 @@ export const ProfilePage: React.FC = () => {
   const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string} | null>(null);
 
   const [resetRequests, setResetRequests] = useState<any[]>([]);
+  const [loadedExtendedProfile, setLoadedExtendedProfile] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -82,25 +83,27 @@ export const ProfilePage: React.FC = () => {
         weaponNumber: (user as any).weaponNumber || '',
       });
 
-      // Дозавантажуємо всі розширені поля з БД (на випадок якщо auth store має не повні дані)
-      api.get('/users/me-extended').then(res => {
-        if (res.data && res.data.data) {
-          const extUser = res.data.data;
-          setProfileForm(prev => ({
-            ...prev,
-            middleName: extUser.middleName || prev.middleName,
-            birthDate: extUser.birthDate || prev.birthDate,
-            serviceStartDate: extUser.serviceStartDate || prev.serviceStartDate,
-            contractEndDate: extUser.contractEndDate || prev.contractEndDate,
-            weaponName: extUser.weaponName || prev.weaponName,
-            weaponNumber: extUser.weaponNumber || prev.weaponNumber,
-            callsign: extUser.callsign || prev.callsign,
-            signature: extUser.signature || prev.signature,
-            firstName: extUser.firstName || prev.firstName,
-            lastName: extUser.lastName || prev.lastName,
-          }));
-        }
-      }).catch(() => {});
+      if (!loadedExtendedProfile) {
+        api.get('/users/me-extended').then(res => {
+          if (res.data && res.data.data) {
+            const extUser = res.data.data;
+            setProfileForm(prev => ({
+              ...prev,
+              middleName: extUser.middleName || prev.middleName,
+              birthDate: extUser.birthDate || prev.birthDate,
+              serviceStartDate: extUser.serviceStartDate || prev.serviceStartDate,
+              contractEndDate: extUser.contractEndDate || prev.contractEndDate,
+              weaponName: extUser.weaponName || prev.weaponName,
+              weaponNumber: extUser.weaponNumber || prev.weaponNumber,
+              callsign: extUser.callsign || prev.callsign,
+              signature: extUser.signature || prev.signature,
+              firstName: extUser.firstName || prev.firstName,
+              lastName: extUser.lastName || prev.lastName,
+            }));
+            setLoadedExtendedProfile(true);
+          }
+        }).catch(() => {});
+      }
 
       // Завантажуємо поточні налаштування 2FA
       const twoFactorStatus = (user as any).twoFactorStatus || {};
@@ -113,7 +116,7 @@ export const ProfilePage: React.FC = () => {
         fetchResetRequests();
       }
     }
-  }, [user]);
+  }, [user, loadedExtendedProfile]);
 
   useEffect(() => {
     // Відмальовуємо підпис, якщо він вже був
@@ -121,8 +124,11 @@ export const ProfilePage: React.FC = () => {
       const ctx = sigCanvasRef.current.getContext('2d');
       const img = new Image();
       img.onload = () => {
-        ctx?.clearRect(0, 0, 300, 100);
-        ctx?.drawImage(img, 0, 0);
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 300, 100);
+          ctx.drawImage(img, 0, 0);
+        }
       };
       img.src = profileForm.signature;
     }
@@ -338,6 +344,10 @@ export const ProfilePage: React.FC = () => {
     const canvas = sigCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
+    if (!profileForm.signature) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -368,9 +378,10 @@ export const ProfilePage: React.FC = () => {
 
   const roleColor = roleColors[user.role] || '#6b7280';
 
-  const tabs = [
-    { id: 'info' as const, label: '👤 Профіль' },
-    { id: 'security' as const, label: '🛡️ Безпека' },
+  type ProfileTab = 'info' | 'security' | 'admin-resets';
+  const tabs: Array<{ id: ProfileTab; label: string }> = [
+    { id: 'info', label: '👤 Профіль' },
+    { id: 'security', label: '🛡️ Безпека' },
   ];
   
   if (user.role === 'admin' || user.role === 'superadmin') {
@@ -408,7 +419,7 @@ export const ProfilePage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setError(''); setSuccess(''); }}
-              className="btn w-full flex items-center justify-center text-center"
+              className={`btn w-full flex items-center justify-center text-center ${tab.id === 'admin-resets' ? 'sm:col-span-2' : ''}`}
               style={{
                 background: activeTab === tab.id ? 'var(--gradient-gold)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--ab3-black)' : 'var(--text-muted)',
@@ -425,10 +436,10 @@ export const ProfilePage: React.FC = () => {
 
       {/* ===== PROFILE TAB ===== */}
       {activeTab === 'info' && (
-        <div className={`grid grid-cols-1 ${editMode ? 'justify-items-center' : 'lg:grid-cols-3'} gap-6 items-start`}>
+        <div className={`grid grid-cols-1 ${editMode ? 'justify-items-center' : 'lg:grid-cols-3'} gap-6 items-stretch`}>
           {/* Profile Card */}
-          <div className={editMode ? "w-full max-w-4xl" : "lg:col-span-1"}>
-            <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
+          <div className={editMode ? "w-full max-w-4xl" : "lg:col-span-1 h-full"}>
+            <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333] h-full">
               <div className="text-center mb-6">
                 <div
                   onClick={() => setAvatarClicks(c => c + 1)}
@@ -444,19 +455,27 @@ export const ProfilePage: React.FC = () => {
                   })()}
                 </div>
                 <h2 className="text-xl font-heading font-black uppercase tracking-widest leading-tight" style={{ color: 'var(--text-primary)' }}>
-                  {user.lastName} {user.firstName} <br className="sm:hidden" />{(user as any).middleName}
+                  {(user.lastName || profileForm.lastName)} {(user.firstName || profileForm.firstName)} <br className="sm:hidden" />{(user as any).middleName || profileForm.middleName}
                 </h2>
                 {(user as any).callsign && <p className="text-sm font-bold text-[var(--ab3-gold)] mt-1">"{ (user as any).callsign }"</p>}
+                {!editMode && ((user as any).signature || profileForm.signature) ? (
+                  <div className="mt-4">
+                    <p className="text-[10px] uppercase tracking-widest font-mono text-gray-500 mb-2">Підпис</p>
+                    <img src={(user as any).signature || profileForm.signature} alt="Підпис" className="mx-auto h-24 object-contain" />
+                  </div>
+                ) : null}
                 <span className="badge rounded-none font-mono uppercase tracking-widest mt-2" style={{ background: `${roleColor}15`, color: roleColor, border: `1px solid ${roleColor}`, fontSize: '10px' }}>
                   {roleLabels[user.role] || user.role}
                 </span>
               </div>
 
               {!editMode ? (
-                <div className="space-y-3">
-                  <button onClick={() => setEditMode(true)} className="btn btn-primary w-full" style={{ padding: '12px 20px', fontSize: '14px' }}>✏️ Редагувати профіль</button>
-                  <button onClick={() => setShowLogoutModal(true)} className="btn w-full" style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 20px', fontSize: '14px' }}>🚪 Вийти з акаунту</button>
-                </div>
+                <>
+                  <div className="space-y-3">
+                    <button onClick={() => setEditMode(true)} className="btn btn-primary w-full" style={{ padding: '12px 20px', fontSize: '14px' }}>✏️ Редагувати профіль</button>
+                    <button onClick={() => setShowLogoutModal(true)} className="btn w-full" style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 20px', fontSize: '14px' }}>🚪 Вийти з акаунту</button>
+                  </div>
+                </>
               ) : (
                 <div className="space-y-4">
                   <fieldset className="border border-[#333] p-4 bg-[#050505]">
@@ -558,11 +577,11 @@ export const ProfilePage: React.FC = () => {
                   <div className="mt-4">
                     <label className="block text-[10px] uppercase font-mono tracking-widest text-gray-500 mb-2 flex justify-between items-center">
                       <span>Особистий підпис (Для рапортів)</span>
-                      <button type="button" onClick={() => { const ctx = sigCanvasRef.current?.getContext('2d'); ctx?.clearRect(0,0,300,100); setProfileForm(p => ({...p, signature: ''})) }} className="text-xs text-red-500 font-mono hover:underline">Очистити</button>
+                      <button type="button" onClick={() => { const ctx = sigCanvasRef.current?.getContext('2d'); if (ctx) { ctx.clearRect(0,0,300,100); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,300,100); } setProfileForm(p => ({...p, signature: ''})) }} className="text-xs text-red-500 font-mono hover:underline">Очистити</button>
                     </label>
-                    <div className="border border-[#333] bg-black p-1 inline-block">
+                    <div className="border border-[#333] bg-[#111] p-1 inline-block">
                       <canvas 
-                        ref={sigCanvasRef} width={300} height={100} className="bg-[#111] cursor-crosshair touch-none"
+                        ref={sigCanvasRef} width={300} height={100} className="bg-white cursor-crosshair touch-none"
                         onMouseDown={startSigDraw} onMouseMove={drawSig} onMouseUp={stopSigDraw} onMouseLeave={stopSigDraw}
                         onTouchStart={startSigDraw} onTouchMove={drawSig} onTouchEnd={stopSigDraw}
                       />
@@ -582,7 +601,7 @@ export const ProfilePage: React.FC = () => {
 
           {/* Info Cards */}
           {!editMode && (
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 h-full">
             <div className="p-6 rounded-none bg-[#0a0a0a] border border-[#333]">
               <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>📋 Основна інформація</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

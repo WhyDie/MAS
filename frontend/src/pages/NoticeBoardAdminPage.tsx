@@ -5,7 +5,7 @@ interface Announcement {
   id: string;
   title: string;
   text: string;
-  type: 'urgent' | 'info' | 'event' | 'warning';
+  type: string;
   author: string;
   createdAt: string;
 }
@@ -16,6 +16,8 @@ const typeConfig: Record<string, { label: string; color: string; icon: string }>
   info: { label: 'Інформація', color: '#3b82f6', icon: 'ℹ️' },
   event: { label: 'Подія', color: '#22c55e', icon: '📅' },
 };
+
+const defaultTypeConfig = { label: 'Інформація', color: '#3b82f6', icon: 'ℹ️' };
 
 const emptyAnnouncement: Omit<Announcement, 'id' | 'author' | 'createdAt'> = {
   title: '',
@@ -132,11 +134,11 @@ export const NoticeBoardAdminPage: React.FC = () => {
       {loading && !showForm ? <div className="p-16 text-center rounded-none bg-[#0a0a0a] border border-[#333]"><svg className="animate-spin w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ab3-gold)' }} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" opacity="0.75"/></svg><p style={{ color: 'var(--text-muted)' }}>Завантаження...</p></div> : (
         <div className="space-y-3">
           {announcements.map(a => {
-            const config = typeConfig[a.type];
+            const config = typeConfig[a.type] || defaultTypeConfig;
             return (
-              <div key={a.id} className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4" style={{ borderLeft: `4px solid ${config?.color || '#6b7280'}` }}>
+              <div key={a.id} className="military-card rounded-none bg-[#0a0a0a] border border-[#333] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4" style={{ borderLeft: `4px solid ${config.color}` }}>
                 <div className="flex-1 min-w-0 w-full">
-                  <div className="flex items-center gap-3 flex-wrap mb-2"><h3 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>{a.title}</h3>{config && <span className="badge" style={{ background: `${config.color}20`, color: config.color, border: `1px solid ${config.color}40`, fontSize: '10px' }}>{config.icon} {config.label}</span>}</div>
+                  <div className="flex items-center gap-3 flex-wrap mb-2"><h3 className="font-bold" style={{ color: 'var(--text-primary)', fontSize: '16px' }}>{a.title}</h3><span className="badge" style={{ background: `${config.color}20`, color: config.color, border: `1px solid ${config.color}40`, fontSize: '10px' }}>{config.icon} {config.label}</span></div>
                   <p className="text-xs truncate" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Автор: {a.author} | {new Date(a.createdAt).toLocaleString('uk-UA')}</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0 self-end sm:self-center">

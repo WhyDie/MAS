@@ -20,7 +20,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
+    "types": [
+      "vite-plugin-pwa/client"
+    ],
     "baseUrl": "./src",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": ["./*"],
       "@components/*": ["./components/*"],

@@ -1,18 +1,15 @@
 import { Router } from 'express';
-import PsychologistRequest from '../models/PsychologistRequest';
 import { AppDataSource } from '../config/database';
 import { sendSuccess, sendError } from '../utils/response';
 import jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
-// import { protect, authorize } from '../middlewares/auth'; // розкоментуйте ваші мідлвари
 
 const router = Router();
-const psychologistRequestRepository = AppDataSource.getRepository(PsychologistRequest);
 
 // Отримати всі психологічні запити (для психолога)
-router.get('/requests', /* protect, authorize('psychologist', 'commander', 'admin'), */ async (req, res) => {
+router.get('/requests', async (req, res) => {
   try {
-    const requests = await psychologistRequestRepository.find({ order: { createdAt: 'DESC' } });
+    const requests = await AppDataSource.query('SELECT * FROM "psychological_support" ORDER BY "createdAt" DESC');
     sendSuccess(res, requests);
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);
@@ -30,17 +27,22 @@ router.get('/all-requests', async (req, res) => {
 });
 
 // Оновити статус запиту (для психолога)
-router.put('/requests/:id/status', /* protect, */ async (req, res) => {
+router.put('/requests/:id/status', async (req, res) => {
   try {
     const { status, response } = req.body;
-    const request = await psychologistRequestRepository.findOneBy({ id: req.params.id as any });
-    if (!request) {
+    const requests = await AppDataSource.query('SELECT * FROM "psychological_support" WHERE id = ?', [req.params.id]);
+    if (requests.length === 0) {
       return sendError(res, 'Запит не знайдено', 404);
     }
+    const request = requests[0];
+
     request.status = status;
-    if (response) (request as any).response = response;
-    if (status === 'resolved' || status === 'completed') (request as any).respondedAt = new Date();
-    await psychologistRequestRepository.save(request);
+    if (response) request.response = response;
+
+    await AppDataSource.query(
+      'UPDATE "psychological_support" SET "status" = ?, "response" = ?, "respondedAt" = CURRENT_TIMESTAMP WHERE "id" = ?',
+      [status, response || null, req.params.id]
+    );
     sendSuccess(res, request);
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);
@@ -48,10 +50,10 @@ router.put('/requests/:id/status', /* protect, */ async (req, res) => {
 });
 
 // Отримати аналітику настрою
-router.get('/analytics', /* protect, */ async (req, res) => {
+router.get('/analytics', async (req, res) => {
   try {
     const stats = { totalPolled: 0, good: 0, normal: 0, stressed: 0, critical: 0 };
-    const requests = await psychologistRequestRepository.find();
+    const requests = await AppDataSource.query('SELECT * FROM "psychological_support"');
     
     stats.totalPolled = requests.length;
     requests.forEach((r: any) => {

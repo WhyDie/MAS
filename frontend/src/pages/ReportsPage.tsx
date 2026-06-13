@@ -11,7 +11,7 @@ export const ReportsPage: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [reason, setReason] = useState('');
-  const [medDetails, setMedDetails] = useState({ time: '', mechanism: 'Осколкове', tourniquetTime: '', meds: '', injuries: '' });
+  const [medDetails] = useState({ time: '', mechanism: 'Осколкове', tourniquetTime: '', meds: '', injuries: '' });
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {

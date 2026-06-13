@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+/* import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPsychologistRequest extends Document {
   type: string; // 'Анонімно' або ім'я бійця
@@ -37,3 +37,4 @@ const PsychologistRequestSchema: Schema = new Schema({
 });
 
 export default mongoose.model<IPsychologistRequest>('PsychologistRequest', PsychologistRequestSchema);
+*/

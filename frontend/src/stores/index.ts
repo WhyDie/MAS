@@ -64,30 +64,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
 }));
 
 interface UIStore {
-  theme: 'dark' | 'red-light' | 'light';
   sidebarOpen: boolean;
   notificationsOpen: boolean;
   panicButtonActive: boolean;
 
-  setTheme: (theme: 'dark' | 'red-light' | 'light') => void;
   toggleSidebar: () => void;
   toggleNotifications: () => void;
   activatePanicButton: () => void;
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  theme: (localStorage.getItem('theme') as any) || 'dark',
   sidebarOpen: false,
   notificationsOpen: false,
   panicButtonActive: false,
 
-  setTheme: (theme) => {
-    localStorage.setItem('theme', theme);
-    const html = document.documentElement;
-    html.classList.remove('dark', 'red-light', 'light');
-    html.classList.add(theme);
-    set({ theme });
-  },
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   toggleNotifications: () =>
     set((state) => ({ notificationsOpen: !state.notificationsOpen })),

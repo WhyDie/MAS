@@ -494,3 +494,36 @@ npm run test --workspace=frontend -- --ui
 npm run lint
 npm run test
 ```
+
+## 🔌 API (коротко)
+
+- Базова точка: `/api` (наприклад, `http://localhost:3000/api`).
+- Аутентифікація: `/api/auth` — логін/реєстрація, refresh токени.
+- Користувачі: `/api/users` — профілі, онбординг, прогрес.
+- Оголошення/FAQ/Knowledge: `/api/announcements`, `/api/faq`, `/api/knowledge`.
+- Тренування/Симулятори: `/api/training`, `/api/simulators`.
+- Менторство/Психологія: `/api/mentorship`, `/api/psychological-support`.
+
+Повний перелік endpoint-ів знаходиться у каталозі `backend/src/routes/`. Якщо потрібно — згенерую OpenAPI/Swagger-специфікацію на основі цих файлів.
+
+## 🤝 Contributing
+
+- Форкуйте репозиторій, створіть гілку `feature/your-feature` або `fix/your-fix`.
+- Пишіть зрозумілі коміти та відкривайте Pull Request з описом змін.
+- Запускайте локально тести перед PR: `npm test`.
+- Дотримуйтесь стилю коду (ESLint/Prettier). Встановіть husky pre-commit hooks при потребі.
+
+## 📬 Contact / Issues
+
+- Для багів та запитів — відкривайте Issue в GitHub-репозиторії.
+- Для термінових питань — контактуйте відповідального розробника через внутрішні канали чи email, вказаний у репозиторії.
+
+## 📝 Changelog (коротко)
+
+- `v2.0.0` — важливі оновлення: PWA offline-first, розширений seed-скрипт `seed-rich-expanded.js`, покращена архітектура онбордингу.
+- `v1.x` — початковий стабільний реліз функціоналу симуляторів та генератора рапортів.
+
+---
+
+Якщо треба — одразу згенерую детальний перелік API-ендпоінтів або додам OpenAPI.
+

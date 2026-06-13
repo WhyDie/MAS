@@ -22,12 +22,12 @@ const ensureUnitSchema = async () => {
       CREATE TABLE IF NOT EXISTS "unit_duties" (
         "id" varchar PRIMARY KEY, "unitId" varchar NOT NULL, "title" varchar NOT NULL,
         "type" varchar DEFAULT 'duty', "status" varchar DEFAULT 'active',
-        "timeRange" varchar, "assignedUserIds" text, "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+        "timeRange" varchar, "assignedUserIds" text, "createdAt" timestamp DEFAULT CURRENT_TIMESTAMP
       )
     `);
     await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "currentStatus" varchar DEFAULT \'active\'').catch(() => {});
     await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "dutyCount" integer DEFAULT 0').catch(() => {});
-    await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "lastDutyDate" datetime').catch(() => {});
+    await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "lastDutyDate" timestamp').catch(() => {});
     await AppDataSource.query('ALTER TABLE "users" ADD COLUMN "commanderNotes" text').catch(() => {});
     unitSchemaChecked = true;
   } catch (e) { console.error('Schema check error:', e); }

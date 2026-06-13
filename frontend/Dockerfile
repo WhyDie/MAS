@@ -1,6 +1,5 @@
 # Build stage
 FROM node:24-alpine AS builder
-
 WORKDIR /app
 
 # Copy package files
@@ -9,30 +8,27 @@ COPY frontend/package*.json ./frontend/
 
 # Install dependencies
 RUN npm ci
-RUN npm ci --workspace=frontend
+
+# Now copy the rest of the source code
+COPY . .
 
 # Copy source
-COPY frontend ./frontend
-
-# Build application
 RUN npm run build --workspace=frontend
 
 # Production stage
 FROM node:24-alpine
-
 WORKDIR /app
 
 # Install serve to run the app (production HTTP server)
 RUN npm install -g serve
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Copy built app
-COPY --from=builder --chown=nodejs:nodejs /app/frontend/dist ./dist
+COPY --from=builder /app/frontend/dist .
 
-USER nodejs
+USER appuser
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
@@ -40,5 +36,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 
 EXPOSE 3000
 
-# Serve the app
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Serve the app from the current directory
+CMD ["serve", "-s", ".", "-l", "3000"]
