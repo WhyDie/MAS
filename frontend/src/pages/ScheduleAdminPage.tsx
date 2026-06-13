@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
-import { useAuthStore } from '@stores/index'; // Додаємо імпорт useAuthStore
 
 interface ScheduleEvent {
   id: string;
@@ -47,7 +46,6 @@ const emptyEvent: Omit<ScheduleEvent, 'id'> = {
 };
 
 export const ScheduleAdminPage: React.FC = () => {
-  const { user } = useAuthStore(); // Отримуємо дані про поточного користувача
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

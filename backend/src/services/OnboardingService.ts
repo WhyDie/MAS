@@ -24,7 +24,7 @@ interface RoadmapWeek {
 interface LearningTrajectory {
   trajectory: string[];
   estimatedDuration: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: 'легко' | 'нормально' | 'складно';
   roadmap: RoadmapWeek[];
   personalRecommendations: string[];
 }
@@ -37,7 +37,7 @@ export class OnboardingService {
    */
   generateTrajectory(answers: ProfileAnswers): LearningTrajectory {
     const trajectory: string[] = [];
-    let difficulty: 'easy' | 'medium' | 'hard' = 'medium';
+    let difficulty: 'легко' | 'нормально' | 'складно' = 'нормально';
     let estimatedDuration = 14;
 
     // Baseline modules for everyone
@@ -55,17 +55,17 @@ export class OnboardingService {
         'Знайомство зі зброєю',
         'Сигнали та команди'
       );
-      difficulty = 'hard';
+      difficulty = 'складно';
       estimatedDuration = 21;
     } else if (answers.militaryExperience === 'conscript') {
       trajectory.push(
         'Поновлення знань про зброю',
         'Тактика в умовах сучасної війни'
       );
-      difficulty = 'medium';
+      difficulty = 'нормально';
       estimatedDuration = 14;
     } else {
-      difficulty = 'easy';
+      difficulty = 'легко';
       estimatedDuration = 7;
     }
 

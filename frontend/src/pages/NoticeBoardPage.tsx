@@ -9,7 +9,7 @@ interface Announcement {
   text: string;
   createdAt: string;
   author: string;
-  type: 'urgent' | 'info' | 'event' | 'warning';
+  type: string;
 }
 
 const typeConfig: Record<string, { label: string; color: string; icon: string }> = {
@@ -18,6 +18,8 @@ const typeConfig: Record<string, { label: string; color: string; icon: string }>
   info: { label: 'Інформація', color: '#3b82f6', icon: 'ℹ️' },  // blue
   event: { label: 'Подія', color: '#22c55e', icon: '📅' },      // green
 };
+
+const defaultTypeConfig = { label: 'Інформація', color: '#3b82f6', icon: 'ℹ️' };
 
 export const NoticeBoardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -114,7 +116,7 @@ export const NoticeBoardPage: React.FC = () => {
           </div>
         ) : (
           filteredAnnouncements.map((a, index) => {
-            const config = typeConfig[a.type];
+            const config = typeConfig[a.type] || defaultTypeConfig;
             return (
               <div key={a.id} className="p-4 sm:p-6 bg-[#0a0a0a] border border-[#333] transition-all duration-300 hover:translate-x-1 animate-fade-in-up relative overflow-hidden" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both', borderLeft: `4px solid ${config.color}` }}>
                 

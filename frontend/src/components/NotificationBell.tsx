@@ -32,7 +32,7 @@ export const NotificationBell: React.FC = () => {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       
-      setNotifications(uniqueNotifications);
+      setNotifications(uniqueNotifications as AppNotification[]);
     } catch (e) {
       console.error(e);
     }
@@ -112,7 +112,7 @@ export const NotificationBell: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-[#0a0a0a] border border-[#333] shadow-2xl z-50 animate-fade-in-up origin-top-right">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-[#0a0a0a] border border-[#333] shadow-2xl z-[60] animate-fade-in-up origin-top-right">
           <div className="flex items-center justify-between p-3 border-b border-[#333] bg-[#111]">
             <h3 className="font-heading font-black uppercase tracking-widest text-sm text-white">Сповіщення</h3>
             <div className="flex gap-3">

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@services/api';
-import { useAuthStore } from '@stores/index';
 
 const COMBAT_RANKS = [
   { xp: 150000, title: 'Вальхалла (Вічність)', icon: '🌌', color: '#a855f7' },
@@ -77,7 +76,6 @@ const getRankInfo = (currentXp: number) => {
 };
 
 export const AchievementsPage: React.FC = () => {
-  const { user } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

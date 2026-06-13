@@ -261,7 +261,6 @@ export const TrainingSimulatorPage: React.FC = () => {
 
   // ===== PLAYING TAB =====
   if (activeTab === 'play' && currentSimulator) {
-    const diff = difficultyConfig[currentSimulator.difficulty] || { label: currentSimulator.difficulty, color: '#6b7280' };
 
     if (isComplete) {
       let pct = 0;

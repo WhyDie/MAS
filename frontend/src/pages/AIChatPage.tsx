@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { aiChat, api } from '@services/api';
+import { aiChat } from '@services/api';
 import { useAuthStore } from '@stores/index';
 
 interface Message {

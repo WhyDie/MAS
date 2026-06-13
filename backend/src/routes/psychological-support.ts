@@ -15,14 +15,14 @@ AppDataSource.query(`
     "contactType" varchar DEFAULT 'anonymous',
     "psychologistId" varchar,
     "response" text,
-    "respondedAt" datetime,
+    "respondedAt" timestamp,
     "respondedByUserId" varchar,
     "status" varchar DEFAULT 'pending',
     "severity" varchar DEFAULT 'medium',
     "keywords" text,
     "isEscalated" boolean DEFAULT 0,
-    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+    "createdAt" timestamp DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" timestamp DEFAULT CURRENT_TIMESTAMP
   )
 `).then(() => {
   AppDataSource.query('ALTER TABLE "psychological_support" ADD COLUMN "message" text').catch(() => {});
@@ -37,7 +37,7 @@ AppDataSource.query(`
     "userId" varchar NOT NULL,
     "mood" integer NOT NULL,
     "notes" text,
-    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+    "createdAt" timestamp DEFAULT CURRENT_TIMESTAMP
   )
 `).catch(() => {});
 
@@ -53,7 +53,7 @@ const getUserId = (req: any) => {
 router.get('/requests', async (req, res) => {
   try {
     const userId = getUserId(req);
-    const requests = await AppDataSource.query(`SELECT p.* FROM "psychological_support" p JOIN "users" u ON p."userId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`, [userId]);
+    const requests = await AppDataSource.query(`SELECT p.* FROM "psychological_support" p JOIN "users" u ON p."userId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`);
     sendSuccess(res, requests);
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);
@@ -214,7 +214,7 @@ router.get('/trends', async (req, res) => {
         "userId" varchar NOT NULL,
         "mood" integer NOT NULL,
         "notes" text,
-        "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+        "createdAt" timestamp DEFAULT CURRENT_TIMESTAMP
       )
     `).catch(() => {});
 

@@ -38,7 +38,7 @@ import { SlangDictionaryPage } from '@pages/SlangDictionaryPage';
 import { SlangAdminPage } from '@pages/SlangAdminPage';
 import { VisualGearPage } from '@pages/VisualGearPage';
 import { Navigate } from 'react-router-dom';
-import { authService } from '@services/api';
+import { authService, api } from '@services/api';
 import { useAuthStore } from '@stores/index';
 import '@styles/index.css';
 
@@ -128,7 +128,7 @@ function App() {
           const data = response.data?.data || response.data;
           if (data?.user) {
             // Одразу підтягуємо розширений профіль (з підписом), щоб він не зникав після F5
-            api.get('/users/profile-extended').then(extRes => {
+            api.get('/users/me-extended').then(extRes => {
               setUser({ ...data.user, ...extRes.data?.data });
             }).catch(() => {
               setUser(data.user);

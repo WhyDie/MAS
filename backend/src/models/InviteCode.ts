@@ -22,7 +22,7 @@ export class InviteCode {
   @Column({ nullable: true })
   usedByUserId?: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ nullable: true })
   usedAt?: Date;
 
   @Column()

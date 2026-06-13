@@ -59,11 +59,11 @@ const ensureInviteTable = async () => {
       "defaultRole" varchar NOT NULL,
       "createdByUserId" varchar,
       "usedByUserId" varchar,
-      "usedAt" datetime,
-      "expiresAt" datetime,
-      "isUsed" boolean DEFAULT 0,
-      "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+      "usedAt" timestamp,
+      "expiresAt" timestamp,
+      "isUsed" boolean DEFAULT false,
+      "createdAt" timestamp DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" timestamp DEFAULT CURRENT_TIMESTAMP
     )
   `).catch(() => {});
 };
@@ -125,8 +125,8 @@ const ensurePasswordResetTable = async () => {
       "email" varchar NOT NULL,
       "code" varchar,
       "status" varchar DEFAULT 'pending',
-      "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
-      "expiresAt" datetime
+      "createdAt" timestamp DEFAULT CURRENT_TIMESTAMP,
+      "expiresAt" timestamp
     )
   `).catch(() => {});
 };
@@ -174,7 +174,7 @@ router.post('/password-reset/:id/:action', authMiddleware, async (req: any, res)
       return res.json({ success: true, message: 'Запит відхилено' });
     }
     if (action === 'approve') {
-      const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-значний код
+      const code = crypto.randomInt(100000, 1000000).toString(); // Криптографічно безпечний 6-значний код
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // Дійсний 24 години
       await AppDataSource.query('UPDATE "password_reset_requests" SET status = ?, code = ?, "expiresAt" = ? WHERE id = ?', ['approved', code, expiresAt, id]);
       
@@ -196,9 +196,11 @@ router.post('/password-reset/confirm', async (req, res) => {
 
     let bcryptLib: any;
     try {
+      // @ts-ignore
       bcryptLib = await import('bcryptjs');
     } catch {
       try {
+        // @ts-ignore
         bcryptLib = await import('bcrypt');
       } catch (err) {
         console.error('Bcrypt import error:', err);

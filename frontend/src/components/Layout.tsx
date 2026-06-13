@@ -4,6 +4,11 @@ import { useAuthStore } from '@stores/index';
 import { NotificationBell } from './NotificationBell';
 import { api } from '@services/api';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
 interface LayoutProps {
   children: ReactNode;
 }
@@ -294,6 +299,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
   const [isRedLight, setIsRedLight] = useState(false);
+  const [headerGlow, setHeaderGlow] = useState({ top: '58%', left: '-35%', width: '560px', height: '230px', duration: '18s' });
+
+  // --- PWA Install State ---
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeaderGlow({
+        top: '58%',
+        left: '-35%',
+        width: '560px',
+        height: '230px',
+        duration: '18s',
+      });
+    }, 18000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- Search State ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -324,6 +347,49 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // --- PWA Installation Logic ---
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault(); // Запобігаємо стандартному показу банера браузера
+      
+      // Перевіряємо локальні налаштування користувача
+      const dismissed = localStorage.getItem('pwa_prompt_dismissed');
+      if (dismissed === 'permanently') return;
+      if (dismissed) {
+        const dismissTime = parseInt(dismissed, 10);
+        if (Date.now() - dismissTime < 24 * 60 * 60 * 1000) return; // Чекаємо 24 години
+      }
+
+      // Зберігаємо подію, щоб викликати її при натисканні кнопки
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowInstallBanner(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setShowInstallBanner(false);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setShowInstallBanner(false);
+    setDeferredPrompt(null);
+  };
+
+  const handleNotNowClick = () => { setShowInstallBanner(false); localStorage.setItem('pwa_prompt_dismissed', Date.now().toString()); };
+  const handleNeverShowClick = () => { setShowInstallBanner(false); localStorage.setItem('pwa_prompt_dismissed', 'permanently'); };
 
   const canAccessMenuItem = (item: MenuItem): boolean => {
     if (!item.roles || item.roles.length === 0) return true;
@@ -429,13 +495,46 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif' }}>
       {/* Top Header Bar */}
       <header
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500 overflow-visible"
         style={{
           background: scrolled ? 'rgba(10, 10, 10, 0.95)' : 'rgba(10, 10, 10, 0.7)',
           backdropFilter: 'blur(24px)',
           borderBottom: scrolled ? '1px solid #333' : '1px solid transparent',
         }}
       >
+        <style>{`
+          @keyframes headerGlowFloat {
+            0% { opacity: 0; left: -35%; top: 45%; transform: translate(-50%, -50%) scale(0.88) rotate(-12deg); }
+            18% { opacity: 0.12; top: 48%; transform: translate(-50%, -50%) scale(0.92) rotate(-8deg); }
+            38% { opacity: 0.18; top: 44%; transform: translate(-50%, -50%) scale(0.98) rotate(2deg); }
+            58% { opacity: 0.24; left: 48%; top: 50%; transform: translate(-50%, -50%) scale(1) rotate(8deg); }
+            76% { opacity: 0.18; top: 47%; transform: translate(-50%, -50%) scale(1.02) rotate(12deg); }
+            90% { opacity: 0.12; top: 49%; transform: translate(-50%, -50%) scale(1.05) rotate(10deg); }
+            100% { opacity: 0; left: 110%; top: 46%; transform: translate(-50%, -50%) scale(1.1) rotate(15deg); }
+          }
+          .header-glow-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(255,205,0,0.14), rgba(59,130,246,0.08) 30%, rgba(34,197,94,0.05) 48%, transparent 100%);
+            pointer-events: none;
+            opacity: 0;
+            filter: blur(24px);
+            mix-blend-mode: screen;
+            transform: translate(-50%, -50%);
+          }
+        `}</style>
+        <div className="absolute inset-0 pointer-events-none">
+          <span
+            className="header-glow-dot"
+            style={{
+              top: headerGlow.top,
+              left: headerGlow.left,
+              width: headerGlow.width,
+              height: headerGlow.height,
+              animation: `headerGlowFloat ${headerGlow.duration} ease-in-out infinite`,
+            }}
+          />
+        </div>
         <div className="flex items-center justify-between px-6 lg:px-8 py-4">
           {/* Left: Logo */}
           <div className="flex items-center gap-4">
@@ -806,6 +905,36 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* God Mode Easter Egg */}
       {logoClicks >= 7 && <MatrixRain />}
+
+      {/* PWA Install Banner */}
+      {showInstallBanner && (
+        <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[9999] max-w-sm w-[calc(100%-2rem)] bg-[#0a0a0a] border-l-4 border-l-[var(--ab3-gold)] border border-[#333] shadow-[8px_8px_0_0_#111] p-6 animate-fade-in-up">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl drop-shadow-md">📲</div>
+            <div className="flex-1">
+              <h4 className="font-heading font-black text-white uppercase tracking-widest text-sm mb-2">
+                ВСТАНОВИТИ СИСТЕМУ
+              </h4>
+              <p className="text-[10px] font-mono text-gray-400 mb-5 leading-relaxed uppercase tracking-widest">
+                Завантажте Систему Адаптації на пристрій для швидкого доступу та надійної роботи в офлайн-режимі.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button onClick={handleInstallClick} className="w-full bg-[var(--ab3-gold)] text-black font-mono font-bold uppercase tracking-widest px-4 py-2.5 hover:bg-yellow-400 transition-colors text-xs shadow-[4px_4px_0_0_rgba(201,162,39,0.2)]">
+                  ЗАВАНТАЖИТИ
+                </button>
+                <div className="flex gap-2">
+                  <button onClick={handleNotNowClick} className="flex-1 bg-[#111] border border-[#333] text-white font-mono uppercase tracking-widest px-2 py-2 hover:bg-[#222] transition-colors text-[10px]">
+                    НЕ ЗАРАЗ
+                  </button>
+                  <button onClick={handleNeverShowClick} className="flex-1 bg-transparent text-gray-500 hover:text-red-500 font-mono uppercase tracking-widest px-2 py-2 transition-colors text-[10px]">
+                    НЕ ПОКАЗУВАТИ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -8,10 +8,28 @@ const router = Router();
 
 const getUserId = (req: any) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) throw new Error('Unauthorized');
+  if (!authHeader) {
+    const err: any = new Error('Unauthorized');
+    err.statusCode = 401;
+    err.publicMessage = 'Unauthorized';
+    throw err;
+  }
   const token = authHeader.split(' ')[1];
-  const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-  return String(decoded.userId || decoded.id || decoded.tempId);
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    return String(decoded.userId || decoded.id || decoded.tempId);
+  } catch (e: any) {
+    if (e && e.name === 'TokenExpiredError') {
+      const err: any = new Error('Token expired');
+      err.statusCode = 401;
+      err.publicMessage = 'Термін дії сесії минув. Будь ласка, увійдіть знову.';
+      throw err;
+    }
+    const err: any = new Error('Unauthorized');
+    err.statusCode = 401;
+    err.publicMessage = 'Unauthorized';
+    throw err;
+  }
 };
 
 // Отримати всі запити (для ментора)
@@ -19,9 +37,10 @@ router.get('/requests', async (req, res) => {
   try {
     const userId = getUserId(req);
     const requests = await AppDataSource.query(`SELECT m.* FROM "mentorship_requests" m JOIN "users" u ON m."recruitId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY m."createdAt" DESC`, [userId]);
-    sendSuccess(res, requests);
+     sendSuccess(res, requests);
   } catch (error) {
-    sendError(res, 'Помилка сервера', 500);
+     if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+     sendError(res, 'Помилка сервера', 500);
   }
 });
 
@@ -30,9 +49,10 @@ router.get('/all-requests', async (req, res) => {
   try {
     const userId = getUserId(req);
     const rows = await AppDataSource.query(`SELECT m.*, u."firstName", u."lastName", u."rank" FROM "mentorship_requests" m LEFT JOIN "users" u ON m."recruitId" = u."id" WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY m."createdAt" DESC`, [userId]);
-    sendSuccess(res, rows.map((r: any) => ({ ...r, recruit: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })));
+     sendSuccess(res, rows.map((r: any) => ({ ...r, recruit: { firstName: r.firstName, lastName: r.lastName, rank: r.rank } })));
   } catch (e) { 
-    sendError(res, 'Помилка сервера', 500); 
+     if (e && e.statusCode) return sendError(res, e.publicMessage || 'Unauthorized', e.statusCode);
+     sendError(res, 'Помилка сервера', 500); 
   }
 });
 
@@ -46,7 +66,8 @@ router.put('/requests/:id/status', async (req, res) => {
     );
     sendSuccess(res, null, 'Оновлено');
   } catch (error) {
-    sendError(res, 'Помилка сервера', 500);
+      if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+      sendError(res, 'Помилка сервера', 500);
   }
 });
 
@@ -99,7 +120,8 @@ router.get('/mentees', async (req, res) => {
 
     sendSuccess(res, formattedMentees);
   } catch (error) {
-    sendError(res, 'Помилка сервера', 500);
+      if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+      sendError(res, 'Помилка сервера', 500);
   }
 });
 
@@ -140,8 +162,9 @@ const createRequest = async (req: any, res: any) => {
     const saved = await AppDataSource.query('SELECT * FROM "mentorship_requests" WHERE id = ?', [id]);
     sendSuccess(res, saved[0], 'Запит створено', 201);
   } catch (error) {
-    console.error('Mentor request err:', error);
-    sendError(res, 'Помилка створення запиту', 500);
+      console.error('Mentor request err:', error);
+      if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+      sendError(res, 'Помилка створення запиту', 500);
   }
 };
 
@@ -159,7 +182,8 @@ router.post('/requests/:id/assign', async (req, res) => {
     await AppDataSource.query('UPDATE "mentorship_requests" SET "mentorId" = ?, "status" = ? WHERE "id" = ?', [mentorId, 'in_progress', req.params.id]);
     sendSuccess(res, null, 'Успішно призначено');
   } catch (error) {
-    sendError(res, 'Помилка сервера', 500);
+      if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+      sendError(res, 'Помилка сервера', 500);
   }
 });
 
@@ -205,8 +229,9 @@ router.get('/mentors/available', async (req, res) => {
     }));
     
     sendSuccess(res, formattedMentors);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching available mentors:', error);
+    if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
     sendError(res, 'Помилка при завантаженні менторів', 500);
   }
 });
@@ -240,8 +265,9 @@ router.get('/recruit/requests', async (req, res) => {
     }));
 
     sendSuccess(res, formattedRequests);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching requests:', error);
+    if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
     sendError(res, 'Помилка при завантаженні запитів', 500);
   }
 });
@@ -282,7 +308,9 @@ router.get('/quests', async (req, res) => {
     `, [userId, userId]);
 
     sendSuccess(res, quests);
-  } catch (error) { sendError(res, 'Помилка завантаження квестів', 500); }
+  } catch (error: any) { 
+    if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+    sendError(res, 'Помилка завантаження квестів', 500); }
 });
 
 // Створити квест (тільки для ментора)
@@ -295,7 +323,9 @@ router.post('/quests', async (req, res) => {
     const id = crypto.randomUUID();
     await AppDataSource.query('INSERT INTO "mentorship_quests" ("id", "mentorId", "recruitId", "title", "description", "xp", "status") VALUES (?, ?, ?, ?, ?, ?, ?)', [id, mentorId, recruitId, title, description, xp || 100, 'pending']);
     sendSuccess(res, { id }, 'Квест призначено');
-  } catch (error) { sendError(res, 'Помилка створення квесту', 500); }
+  } catch (error: any) { 
+    if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+    sendError(res, 'Помилка створення квесту', 500); }
 });
 
 // Оновити статус квесту (для звітування та перевірки)
@@ -303,7 +333,9 @@ router.put('/quests/:id/status', async (req, res) => {
   try {
     await AppDataSource.query('UPDATE "mentorship_quests" SET "status" = ?, "updatedAt" = CURRENT_TIMESTAMP WHERE "id" = ?', [req.body.status, req.params.id]);
     sendSuccess(res, null, 'Статус оновлено');
-  } catch (error) { sendError(res, 'Помилка оновлення статусу', 500); }
+  } catch (error: any) { 
+    if (error && error.statusCode) return sendError(res, error.publicMessage || 'Unauthorized', error.statusCode);
+    sendError(res, 'Помилка оновлення статусу', 500); }
 });
 
 export default router;

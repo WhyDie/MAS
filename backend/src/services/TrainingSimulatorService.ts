@@ -402,7 +402,7 @@ export class TrainingSimulatorService {
     });
 
     if (userAttempts.length === 0) {
-      return this.getAllSimulators(undefined, undefined, SimulatorDifficulty.EASY, limit);
+      return this.getAllSimulators(undefined, undefined, SimulatorDifficulty.easy, limit);
     }
 
     // Get simulators user hasn't completed yet

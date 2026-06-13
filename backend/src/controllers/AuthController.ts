@@ -322,7 +322,7 @@ export class AuthController {
     try {
       const { tempToken } = req.body;
       const decoded = jwt.verify(tempToken, process.env.JWT_SECRET || 'secret') as any;
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const code = crypto.randomInt(100000, 1000000).toString();
       await AppDataSource.query('UPDATE "user_ext" SET "emailCode2FA" = ? WHERE "userId" = ?', [code, decoded.tempId]);
       
       const userExt = await AppDataSource.query('SELECT "emailFor2FA" FROM "user_ext" WHERE "userId" = ?', [decoded.tempId]);
@@ -366,7 +366,10 @@ export class AuthController {
       const decoded = jwt.verify(tempToken, process.env.JWT_SECRET || 'secret') as any;
       const users = await AppDataSource.query('SELECT * FROM "users" WHERE id = ?', [decoded.tempId]);
       const user = users[0];
-      if (!user) return sendError(res, 'User not found', 404);
+      if (!user) {
+        sendError(res, 'User not found', 404);
+        return;
+      }
 
       const extArr = await AppDataSource.query('SELECT * FROM "user_ext" WHERE "userId" = ?', [decoded.tempId]);
       const userExt = extArr[0];
@@ -376,10 +379,13 @@ export class AuthController {
       else if (method === 'email' && userExt?.isEmailCodeEnabled) { isValid = userExt.emailCode2FA === code; }
       else if (method === 'biometrics' && userExt?.isBiometricsEnabled) { isValid = userExt.webAuthnCredentialId === credentialId; }
 
-      if (!isValid) return sendError(res, 'Невірний код або метод перевірки', 400);
+      if (!isValid) {
+        sendError(res, 'Невірний код або метод перевірки', 400);
+        return;
+      }
       if (method === 'email') await AppDataSource.query('UPDATE "user_ext" SET "emailCode2FA" = NULL WHERE "userId" = ?', [user.id]);
 
-      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: process.env.JWT_EXPIRE || '7d' });
+      const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: (process.env.JWT_EXPIRE || '7d') as any });
       const userData = {
         ...user,
         callsign: userExt?.callsign || '',

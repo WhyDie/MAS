@@ -15,7 +15,6 @@ export interface User {
 }
 
 export interface UserPreferences {
-  theme: 'dark' | 'red-light' | 'light';
   notifications: boolean;
   language: string;
 }

@@ -17,9 +17,9 @@ export enum SimulatorType {
 }
 
 export enum SimulatorDifficulty {
-  EASY = 'easy',
+  easy = 'easy',
   NORMAL = 'normal',
-  HARD = 'hard',
+  hard = 'hard',
   EXTREME = 'extreme',
 }
 
