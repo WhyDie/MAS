@@ -12,7 +12,8 @@
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "preview": "concurrently \"npm run start --workspace=backend\" \"npm run preview --workspace=frontend\""
+    "preview": "concurrently \"npm run start --workspace=backend\" \"npm run preview --workspace=frontend\"",
+    "db:reset": "rm -f backend/military_system.db && node backend/scripts/seed-rich-expanded.js && node backend/scripts/seed-superadmin.js && node backend/scripts/seed-knowledge.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

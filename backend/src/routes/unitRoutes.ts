@@ -14,6 +14,10 @@ AppDataSource.query('ALTER TABLE "users" ADD COLUMN "middleName" varchar').catch
 AppDataSource.query('ALTER TABLE "unit_chat_messages" ADD COLUMN "channel" varchar DEFAULT \'general\'').catch(() => {
 });
 
+AppDataSource.query(`CREATE TABLE IF NOT EXISTS "unit_rooms" ("id" varchar PRIMARY KEY, "name" varchar, "description" text, "icon" varchar, "category" varchar, "floor" varchar, "roomNumber" varchar, "phone" varchar, "sortOrder" integer DEFAULT 0, "isActive" boolean DEFAULT 1, "createdAt" datetime DEFAULT CURRENT_TIMESTAMP, "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
+AppDataSource.query(`CREATE TABLE IF NOT EXISTS "unit_staff" ("id" varchar PRIMARY KEY, "rank" varchar, "fullName" varchar, "position" varchar, "icon" varchar, "room" varchar, "floor" varchar, "phone" varchar, "description" text, "sortOrder" integer DEFAULT 0, "isActive" boolean DEFAULT 1, "createdAt" datetime DEFAULT CURRENT_TIMESTAMP, "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
+AppDataSource.query(`CREATE TABLE IF NOT EXISTS "unit_arrival_steps" ("id" varchar PRIMARY KEY, "title" varchar, "description" text, "icon" varchar, "sortOrder" integer DEFAULT 0, "isActive" boolean DEFAULT 1, "createdAt" datetime DEFAULT CURRENT_TIMESTAMP, "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP)`).catch(() => {});
+
 let unitSchemaChecked = false;
 const ensureUnitSchema = async () => {
   if (unitSchemaChecked) return;

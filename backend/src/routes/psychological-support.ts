@@ -53,7 +53,7 @@ const getUserId = (req: any) => {
 router.get('/requests', async (req, res) => {
   try {
     const userId = getUserId(req);
-    const requests = await AppDataSource.query(`SELECT p.* FROM "psychological_support" p JOIN "users" u ON p."userId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`);
+    const requests = await AppDataSource.query(`SELECT p.* FROM "psychological_support" p JOIN "users" u ON p."userId" = u.id WHERE u."unitId" = (SELECT "unitId" FROM "users" WHERE id = ?) ORDER BY p."createdAt" DESC`, [userId]);
     sendSuccess(res, requests);
   } catch (error) {
     sendError(res, 'Помилка сервера', 500);

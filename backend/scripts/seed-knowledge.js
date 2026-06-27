@@ -438,6 +438,24 @@ const articles = [
 
 console.log('📚 Seeding KnowledgeBase articles...');
 
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS "knowledge_base_articles" (
+    "id" varchar PRIMARY KEY,
+    "title" varchar NOT NULL,
+    "description" text,
+    "content" text NOT NULL,
+    "category" varchar,
+    "difficulty" varchar,
+    "tags" text,
+    "estimatedMinutes" integer DEFAULT 0,
+    "viewCount" integer DEFAULT 0,
+    "isPublished" boolean DEFAULT 1,
+    "authorId" varchar,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`).run();
+
 const stmt = db.prepare(`
   INSERT OR REPLACE INTO knowledge_base_articles
   (id, title, description, content, category, difficulty, tags, estimatedMinutes, viewCount, isPublished, authorId, createdAt, updatedAt)

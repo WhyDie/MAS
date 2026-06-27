@@ -5,6 +5,7 @@ const path = require('path');
 // Підключаємось до вашої бази даних
 const dbPath = path.resolve(__dirname, '../military_system.db');
 const db = new Database(dbPath);
+db.pragma('journal_mode = WAL');
 
 const id = crypto.randomUUID();
 const code = 'GODMODE';

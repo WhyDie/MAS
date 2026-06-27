@@ -261,6 +261,77 @@ ensureTable(`
   )
 `);
 
+ensureTable(`
+  CREATE TABLE IF NOT EXISTS "unit_rooms" (
+    "id" varchar PRIMARY KEY,
+    "name" varchar,
+    "description" text,
+    "icon" varchar,
+    "category" varchar,
+    "floor" varchar,
+    "roomNumber" varchar,
+    "phone" varchar,
+    "sortOrder" integer DEFAULT 0,
+    "isActive" boolean DEFAULT 1,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+ensureTable(`
+  CREATE TABLE IF NOT EXISTS "unit_staff" (
+    "id" varchar PRIMARY KEY,
+    "rank" varchar,
+    "fullName" varchar,
+    "position" varchar,
+    "icon" varchar,
+    "room" varchar,
+    "floor" varchar,
+    "phone" varchar,
+    "description" text,
+    "sortOrder" integer DEFAULT 0,
+    "isActive" boolean DEFAULT 1,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+ensureTable(`
+  CREATE TABLE IF NOT EXISTS "unit_arrival_steps" (
+    "id" varchar PRIMARY KEY,
+    "title" varchar,
+    "description" text,
+    "icon" varchar,
+    "sortOrder" integer DEFAULT 0,
+    "isActive" boolean DEFAULT 1,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+ensureTable(`
+  CREATE TABLE IF NOT EXISTS "unit_chat_messages" (
+    "id" varchar PRIMARY KEY,
+    "unitId" varchar NOT NULL,
+    "senderId" varchar NOT NULL,
+    "channel" varchar DEFAULT 'general',
+    "encryptedContent" text NOT NULL,
+    "iv" varchar NOT NULL,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
+ensureTable(`
+  CREATE TABLE IF NOT EXISTS "direct_messages" (
+    "id" varchar PRIMARY KEY,
+    "senderId" varchar NOT NULL,
+    "receiverId" varchar NOT NULL,
+    "encryptedContent" text NOT NULL,
+    "iv" varchar NOT NULL,
+    "createdAt" datetime DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 const units = [
   { id: 'unit-alpha-00000000-0000-0000-0000-000000000001', name: '2-й гірсько-штурмовий батальйон', inviteCode: 'ALPHA-INVITE-2026' },
   { id: 'unit-bravo-00000000-0000-0000-0000-000000000002', name: '3-й механізований батальйон', inviteCode: 'BRAVO-INVITE-2026' },
@@ -410,6 +481,9 @@ const moduleCategoryMap = {
     summary: 'Курс із редагування внутрішніх конфліктів та роботи в команді.'
   },
 };
+
+const moduleCategories = Object.keys(moduleCategoryMap);
+const moduleDifficulties = ['beginner', 'intermediate', 'advanced'];
 
 const trainingModules = Array.from({ length: 55 }, (_, index) => {
   const category = randomFrom(moduleCategories);
